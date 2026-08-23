@@ -36,6 +36,19 @@ class InstagramBot:
 
     def login(self) -> bool:
         try:
+            # Try to load saved session first
+            try:
+                self.client.load_settings(Config.INSTAGRAM_USERNAME)
+                logger.info(f"Loaded saved session for {Config.INSTAGRAM_USERNAME}")
+                self.is_logged_in = True
+                return True
+            except Exception:
+                pass
+
+            # Set up challenge handler for Instagram verification
+            self.client.challenge_code_handler = self._handle_challenge
+
+            # Login with credentials
             self.client.login(Config.INSTAGRAM_USERNAME, Config.INSTAGRAM_PASSWORD)
             self.is_logged_in = True
             logger.info(f"Successfully logged in as {Config.INSTAGRAM_USERNAME}")
@@ -47,8 +60,22 @@ class InstagramBot:
             logger.error(f"Login error: {str(e)}")
             return False
 
+    def _handle_challenge(self, username: str, choice: str) -> str:
+        """Handle Instagram challenge (2FA/verification)"""
+        logger.info(f"Instagram verification required for {username}")
+        print(f"\n⚠️  Требуется верификация Instagram для {username}")
+        print(f"   Выберите способ верификации: {choice}")
+        code = input("   Введите код верификации: ").strip()
+        return code
+
     def logout(self):
         if self.is_logged_in:
+            try:
+                self.client.save_settings(Config.INSTAGRAM_USERNAME)
+                logger.info("Session saved for next login")
+            except Exception as e:
+                logger.debug(f"Could not save session: {str(e)}")
+
             self.client.logout()
             self.is_logged_in = False
             logger.info("Logged out successfully")
