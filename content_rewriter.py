@@ -159,6 +159,8 @@ class ContentRewriter:
         return suggestions
 
     def optimize_for_algorithm(self, caption: str) -> str:
+        """Оптимизировать текст для алгоритма Инстаграма"""
+
         text = caption.strip()
 
         if len(text) > 125:

@@ -11,6 +11,9 @@ from config import Config
 from scheduler import BotScheduler
 from content_manager import ContentManager
 from instagram_bot import InstagramBot
+from autonomous_workflow import AutonomousContentWorkflow
+from content_rewriter import ContentRewriter
+from content_curator import ContentCurator
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -19,6 +22,7 @@ Config.init_directories()
 scheduler = None
 bot = None
 content_manager = ContentManager()
+workflow = None
 
 
 @click.group()
@@ -176,6 +180,114 @@ def follow(username, amount):
         bot_instance.logout()
     else:
         click.echo("✗ Failed to login")
+
+
+@cli.group()
+def workflow_cmds():
+    pass
+
+
+@workflow_cmds.command(name='discover')
+@click.option('--min-relevance', type=float, default=0.5, help='Minimum relevance score (0-1)')
+def discover(min_relevance):
+    click.echo("🔍 Starting content discovery and curation...")
+    global workflow
+    workflow = AutonomousContentWorkflow()
+
+    if not workflow.login():
+        click.echo("✗ Failed to login")
+        return
+
+    result = workflow.discover_and_curate(min_relevance)
+    click.echo(f"✓ Discovery complete!")
+    click.echo(f"  Discovered channels: {result['discovered_channels']}")
+    click.echo(f"  Curated posts: {result['curated_posts']}")
+    click.echo(f"  Processed posts: {result['processed_posts']}")
+
+
+@workflow_cmds.command(name='rewrite')
+@click.option('--text', prompt='Text to rewrite', type=str)
+@click.option('--style', default='engaging', type=click.Choice(['engaging', 'professional', 'casual']))
+def rewrite(text, style):
+    click.echo(f"✏️ Rewriting with style: {style}")
+    rewriter = ContentRewriter()
+
+    rewritten = rewriter.rewrite_caption(text, style=style)
+    click.echo("\n📝 Original:")
+    click.echo(text)
+    click.echo("\n✨ Rewritten:")
+    click.echo(rewritten)
+
+    suggestions = rewriter.suggest_improvements(rewritten)
+    if suggestions:
+        click.echo("\n💡 Suggestions:")
+        for suggestion in suggestions:
+            click.echo(f"  • {suggestion}")
+
+
+@workflow_cmds.command(name='match-images')
+@click.option('--text', prompt='Caption text', type=str)
+@click.option('--image-dir', default='content/images', help='Path to image directory')
+@click.option('--limit', default=3, help='Number of matches to return')
+def match_images(text, image_dir, limit):
+    click.echo("🖼️ Matching images to caption...")
+    matcher = ImageMatcher()
+
+    matcher.load_image_library(image_dir)
+
+    matching = matcher.find_matching_images(text, limit=limit)
+
+    if matching:
+        click.echo(f"\n✓ Found {len(matching)} matching images:")
+        table_data = []
+        for img in matching:
+            table_data.append([
+                img['filename'],
+                f"{img['match_score']:.2f}",
+                ', '.join(img['tags'][:3])
+            ])
+        headers = ['Filename', 'Match Score', 'Tags']
+        click.echo(tabulate(table_data, headers=headers))
+    else:
+        click.echo("✗ No matching images found")
+
+
+@workflow_cmds.command(name='full-workflow')
+@click.option('--min-relevance', type=float, default=0.5)
+@click.option('--auto-schedule', is_flag=True, default=True)
+@click.option('--image-dir', default='content/images', help='Path to image directory')
+def full_workflow_cmd(min_relevance, auto_schedule, image_dir):
+    click.echo("🚀 Starting full autonomous workflow...")
+    click.echo("  1. Discovering similar channels...")
+    click.echo("  2. Curating relevant content...")
+    click.echo("  3. Rewriting captions...")
+    click.echo("  4. Matching images...")
+    click.echo("  5. Scheduling posts...")
+
+    global workflow
+    workflow = AutonomousContentWorkflow()
+
+    if not workflow.login():
+        click.echo("✗ Failed to login")
+        return
+
+    workflow.load_image_library(image_dir)
+
+    result = workflow.full_workflow(min_relevance, auto_schedule)
+
+    click.echo("\n✓ Workflow complete!")
+    report = workflow.get_workflow_report()
+    click.echo(json.dumps(report, indent=2))
+
+
+@workflow_cmds.command(name='report')
+def workflow_report():
+    global workflow
+    if not workflow:
+        workflow = AutonomousContentWorkflow()
+
+    report = workflow.get_workflow_report()
+    click.echo(json.dumps(report, indent=2))
 
 
 if __name__ == '__main__':
