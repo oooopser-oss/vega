@@ -98,17 +98,31 @@ MAX_CHAT_ID=...
 
 ```javascript
 filters: {
-  dateFrom: null,           // Дата от (YYYY-MM-DD)
-  dateTo: null,             // Дата до (YYYY-MM-DD)
+  dateFrom: null,           // Дата создания от (YYYY-MM-DD)
+  dateTo: null,             // Дата создания до (YYYY-MM-DD)
+  planDateFrom: null,       // Дата решения (план) от (YYYY-MM-DD)
+  planDateTo: null,         // Дата решения (план) до (YYYY-MM-DD)
   clusters: [],             // Кластеры: ['cluster1', 'cluster2']
   theme: [],                // Тема: ['tech_equipment', 'new_concept']
   status: 'all',            // Статус: 'all', 'new', 'in_progress', 'completed'
+  excludeExpired: true,     // Исключить просроченные заявки (красные) - true/false
 }
 ```
 
 Доступные темы:
 - `tech_equipment` — Технологическое оборудование
 - `new_concept` — Новый концепт
+
+### Исключение просроченных заявок
+
+По умолчанию приложение **скрывает просроченные заявки** (выделены красным) из скриншотов.
+
+Чтобы включить просроченные заявки в скриншот:
+```javascript
+excludeExpired: false
+```
+
+Просроченные заявки будут скрыты на уровне браузера перед снимком скриншота.
 
 ## Использование
 

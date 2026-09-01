@@ -2,11 +2,14 @@
 export const config = {
   // Фильтры по умолчанию
   filters: {
-    dateFrom: null,      // YYYY-MM-DD или null (без фильтра)
-    dateTo: null,        // YYYY-MM-DD или null (без фильтра)
-    clusters: [],        // ['cluster1', 'cluster2'] или []
-    theme: [],           // ['tech_equipment', 'new_concept'] или []
-    status: 'all',       // 'all', 'new', 'in_progress', 'completed'
+    dateFrom: null,            // YYYY-MM-DD или null (без фильтра) - дата создания
+    dateTo: null,              // YYYY-MM-DD или null (без фильтра) - дата создания
+    planDateFrom: null,        // YYYY-MM-DD или null - дата решения (план)
+    planDateTo: null,          // YYYY-MM-DD или null - дата решения (план)
+    clusters: [],              // ['cluster1', 'cluster2'] или []
+    theme: [],                 // ['tech_equipment', 'new_concept'] или []
+    status: 'all',             // 'all', 'new', 'in_progress', 'completed'
+    excludeExpired: true,      // Исключить просроченные заявки (выделены красным)
   },
 
   // Возможные темы обращений
@@ -71,8 +74,17 @@ export const config = {
     // Дата создания (до)
     dateToInput: 'input[placeholder*="До"], input[name="date_to"], [data-filter="date_to"]',
 
+    // Дата решения (план) - от
+    planDateFromInput: 'input[placeholder*="План от"], input[name="plan_date_from"], [data-filter="plan_date_from"]',
+
+    // Дата решения (план) - до
+    planDateToInput: 'input[placeholder*="План до"], input[name="plan_date_to"], [data-filter="plan_date_to"]',
+
     // Кнопка применить фильтры
     applyFiltersButton: 'button:has-text("Применить"), button:has-text("Поиск"), button[type="submit"]',
+
+    // Просроченные заявки (красные элементы) - для скрытия на скриншоте
+    expiredTasksSelector: '.expired, [data-status="expired"], .overdue, [class*="expired"], [style*="red"]',
   },
 
   // Задержки

@@ -92,6 +92,26 @@ export class BrowserManager {
         }
       }
 
+      // Дата решения (план) - от
+      if (filters.planDateFrom) {
+        try {
+          await this.page.fill(config.selectors.planDateFromInput, filters.planDateFrom, { force: true });
+          console.log(`  ✓ Дата решения (план) от: ${filters.planDateFrom}`);
+        } catch (e) {
+          console.log(`  ⚠ Не удалось установить дату решения "От"`);
+        }
+      }
+
+      // Дата решения (план) - до
+      if (filters.planDateTo) {
+        try {
+          await this.page.fill(config.selectors.planDateToInput, filters.planDateTo, { force: true });
+          console.log(`  ✓ Дата решения (план) до: ${filters.planDateTo}`);
+        } catch (e) {
+          console.log(`  ⚠ Не удалось установить дату решения "До"`);
+        }
+      }
+
       // Кластеры (input с множественным выбором или select)
       if (filters.clusters && filters.clusters.length > 0) {
         try {
@@ -174,12 +194,59 @@ export class BrowserManager {
     }
   }
 
-  async takeScreenshot(filename) {
+  async hideExpiredTasks() {
     if (!this.page) {
       throw new Error('Страница не инициализирована');
     }
 
     try {
+      // Пытаемся найти и скрыть просроченные элементы (красные заявки)
+      // Скрываем элементы с классом или атрибутом, указывающим на просрочку
+      await this.page.evaluate(() => {
+        // Ищем строки таблицы с красным цветом текста (Выполняется - просрочено)
+        const rows = document.querySelectorAll('table tr, [role="row"]');
+        rows.forEach(row => {
+          const text = row.textContent;
+          // Если строка содержит "Выполняется" И выделена красным (проверяем стили)
+          const style = window.getComputedStyle(row);
+          const color = style.color;
+
+          // Красный цвет обычно имеет высокое значение R компоненты
+          if (text.includes('Выполняется') && color.includes('rgb')) {
+            // Проверяем красный цвет
+            const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (rgbMatch) {
+              const [_, r, g, b] = rgbMatch.map(Number);
+              // Если красный компонент выше 200 и другие низкие - это красный цвет
+              if (r > 150 && g < 100 && b < 100) {
+                row.style.display = 'none';
+              }
+            }
+          }
+        });
+      });
+
+      console.log('✓ Просроченные заявки скрыты');
+      return true;
+    } catch (error) {
+      console.log(`⚠ Не удалось скрыть просроченные заявки: ${error.message}`);
+      return false;
+    }
+  }
+
+  async takeScreenshot(filename, options = {}) {
+    if (!this.page) {
+      throw new Error('Страница не инициализирована');
+    }
+
+    try {
+      const excludeExpired = options.excludeExpired !== false; // По умолчанию true
+
+      // Скрываем просроченные заявки если нужно
+      if (excludeExpired) {
+        await this.hideExpiredTasks();
+      }
+
       await this.page.waitForTimeout(config.delays.beforeScreenshot);
 
       await this.page.screenshot({

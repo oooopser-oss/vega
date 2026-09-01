@@ -46,7 +46,9 @@ async function monitor() {
 
     // Делаем скриншот
     const screenshotPath = await screenshotMgr.getScreenshotPath('requests');
-    await browser.takeScreenshot(screenshotPath);
+    await browser.takeScreenshot(screenshotPath, {
+      excludeExpired: filters.excludeExpired !== false,
+    });
 
     // Сохраняем метаданные
     await screenshotMgr.saveMetadata(screenshotPath, filters, {

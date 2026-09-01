@@ -10,6 +10,7 @@ export const profiles = {
       clusters: ['Кластер Екатеринбург 46'],
       theme: ['tech_equipment'],
       status: 'all',
+      excludeExpired: true,
     },
   },
 
@@ -20,6 +21,7 @@ export const profiles = {
       clusters: ['Кластер Екатеринбург 46'],
       theme: ['new_concept'],
       status: 'all',
+      excludeExpired: true,
     },
   },
 
@@ -30,6 +32,7 @@ export const profiles = {
       clusters: ['Кластер Екатеринбург 49'],
       theme: ['tech_equipment'],
       status: 'all',
+      excludeExpired: true,
     },
   },
 
@@ -40,6 +43,7 @@ export const profiles = {
       clusters: ['Кластер Екатеринбург 49'],
       theme: ['new_concept'],
       status: 'all',
+      excludeExpired: true,
     },
   },
 
@@ -50,6 +54,7 @@ export const profiles = {
       clusters: ['Кластер Екатеринбург 51'],
       theme: ['tech_equipment'],
       status: 'all',
+      excludeExpired: true,
     },
   },
 
@@ -60,6 +65,7 @@ export const profiles = {
       clusters: ['Кластер Екатеринбург 51'],
       theme: ['new_concept'],
       status: 'all',
+      excludeExpired: true,
     },
   },
 
@@ -70,6 +76,7 @@ export const profiles = {
       clusters: ['Кластер Екатеринбург 46', 'Кластер Екатеринбург 49', 'Кластер Екатеринбург 51'],
       theme: ['tech_equipment'],
       status: 'all',
+      excludeExpired: true,
     },
   },
 
@@ -80,6 +87,7 @@ export const profiles = {
       clusters: ['Кластер Екатеринбург 46', 'Кластер Екатеринбург 49', 'Кластер Екатеринбург 51'],
       theme: ['new_concept'],
       status: 'all',
+      excludeExpired: true,
     },
   },
 
@@ -90,6 +98,7 @@ export const profiles = {
       clusters: ['Кластер Екатеринбург 46', 'Кластер Екатеринбург 49', 'Кластер Екатеринбург 51'],
       theme: ['tech_equipment', 'new_concept'],
       status: 'all',
+      excludeExpired: true,
     },
   },
 };

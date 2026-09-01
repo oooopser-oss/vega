@@ -168,7 +168,9 @@ async function main() {
 
     // Скриншот
     const screenshotPath = await screenshotMgr.getScreenshotPath('requests');
-    await browser.takeScreenshot(screenshotPath);
+    await browser.takeScreenshot(screenshotPath, {
+      excludeExpired: filters.excludeExpired !== false,
+    });
 
     // Метаданные
     await screenshotMgr.saveMetadata(screenshotPath, filters, {
