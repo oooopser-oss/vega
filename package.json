@@ -23,7 +23,8 @@
     "cli:all-tech": "node src/run-all-profiles.js --theme tech",
     "cli:all-concept": "node src/run-all-profiles.js --theme concept",
     "cli:all": "node src/run-all-profiles.js",
-    "view": "node src/view-screenshots.js"
+    "view": "node src/view-screenshots.js",
+    "debug": "node src/debug-selectors.js"
   },
   "dependencies": {
     "playwright": "^1.40.0",
