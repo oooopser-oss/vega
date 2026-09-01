@@ -58,7 +58,39 @@ TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
 TELEGRAM_CHAT_ID=-123456789
 ```
 
-Скриншоты будут отправляться с подписью содержащей фильтры и время.
+### Интеграция с Max.ru (VK Max)
+
+Для отправки скриншотов в группу Max.ru:
+
+1. Получите Access Token через [VK Developer](https://dev.vk.com)
+2. Создайте или используйте существующую группу в Max
+3. Получите ID группы
+4. Добавьте в `.env`:
+
+```bash
+MAX_ENABLED=true
+MAX_ACCESS_TOKEN=your_access_token
+MAX_CHAT_ID=-your_group_id
+```
+
+**Подробная инструкция:** [docs/MAX_INTEGRATION.md](docs/MAX_INTEGRATION.md)
+
+### Одновременная отправка в несколько мессенджеров
+
+Включите несколько интеграций в `.env`:
+
+```bash
+# Telegram + Max.ru
+TELEGRAM_ENABLED=true
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHAT_ID=...
+
+MAX_ENABLED=true
+MAX_ACCESS_TOKEN=...
+MAX_CHAT_ID=...
+```
+
+Скриншоты будут отправлены в обе группы одновременно.
 
 ### Настройка фильтров
 

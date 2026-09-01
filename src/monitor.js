@@ -2,6 +2,7 @@ import 'dotenv/config';
 import BrowserManager from './browser.js';
 import ScreenshotManager from './screenshot-manager.js';
 import TelegramSender from './telegram-sender.js';
+import MaxSender from './max-sender.js';
 import config from './config.js';
 
 const SITE_URL = process.env.SITE_URL || 'http://expl.x5.ru';
@@ -16,6 +17,10 @@ if (!LOGIN || !PASSWORD) {
 
 const telegram = config.telegram.enabled
   ? new TelegramSender(config.telegram.botToken, config.telegram.chatId)
+  : null;
+
+const max = config.max.enabled
+  ? new MaxSender(config.max.accessToken, config.max.chatId)
   : null;
 
 async function monitor() {
@@ -49,9 +54,17 @@ async function monitor() {
       userAgent: await browser.page.evaluate(() => navigator.userAgent),
     });
 
-    // Отправляем в Telegram если включено
+    // Отправляем скриншот в Telegram если включено
     if (telegram) {
       await telegram.sendScreenshot(screenshotPath, {
+        timestamp: new Date().toISOString(),
+        filters,
+      });
+    }
+
+    // Отправляем скриншот в Max.ru если включено
+    if (max) {
+      await max.sendScreenshot(screenshotPath, {
         timestamp: new Date().toISOString(),
         filters,
       });
@@ -63,9 +76,12 @@ async function monitor() {
     console.error('\n✗ Ошибка при мониторинге:', error.message);
     await screenshotMgr.saveLog(`✗ Ошибка: ${error.message}`);
 
-    // Отправляем уведомление об ошибке в Telegram
+    // Отправляем уведомление об ошибке
     if (telegram) {
       await telegram.notifyError(error.message);
+    }
+    if (max) {
+      await max.notifyError(error.message);
     }
 
     process.exit(1);

@@ -5,6 +5,7 @@ import process from 'process';
 import BrowserManager from './browser.js';
 import ScreenshotManager from './screenshot-manager.js';
 import TelegramSender from './telegram-sender.js';
+import MaxSender from './max-sender.js';
 import config from './config.js';
 
 const SITE_URL = process.env.SITE_URL || 'http://expl.x5.ru';
@@ -138,6 +139,15 @@ async function main() {
     if (args['send-telegram']) {
       const telegram = new TelegramSender(config.telegram.botToken, config.telegram.chatId);
       await telegram.sendScreenshot(screenshotPath, {
+        timestamp: new Date().toISOString(),
+        filters,
+      });
+    }
+
+    // Отправляем в Max если включено
+    if (config.max.enabled) {
+      const max = new MaxSender(config.max.accessToken, config.max.chatId);
+      await max.sendScreenshot(screenshotPath, {
         timestamp: new Date().toISOString(),
         filters,
       });

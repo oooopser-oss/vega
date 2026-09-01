@@ -4,6 +4,7 @@ import { URL } from 'url';
 import BrowserManager from './browser.js';
 import ScreenshotManager from './screenshot-manager.js';
 import TelegramSender from './telegram-sender.js';
+import MaxSender from './max-sender.js';
 import config from './config.js';
 
 const PORT = config.api.port;
@@ -149,6 +150,18 @@ async function runMonitoring(filters) {
       });
     }
 
+    // Отправляем в Max если включено
+    const max = config.max.enabled
+      ? new MaxSender(config.max.accessToken, config.max.chatId)
+      : null;
+
+    if (max) {
+      await max.sendScreenshot(screenshotPath, {
+        timestamp: new Date().toISOString(),
+        filters,
+      });
+    }
+
     console.log('✓ Мониторинг завершён успешно\n');
     await screenshotMgr.saveLog('✓ Завершено успешно');
   } catch (error) {
@@ -156,6 +169,12 @@ async function runMonitoring(filters) {
     await screenshotMgr.saveLog(`✗ Ошибка: ${error.message}`);
     if (telegram) {
       await telegram.notifyError(error.message);
+    }
+    const max = config.max.enabled
+      ? new MaxSender(config.max.accessToken, config.max.chatId)
+      : null;
+    if (max) {
+      await max.notifyError(error.message);
     }
     throw error;
   } finally {

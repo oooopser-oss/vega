@@ -54,11 +54,18 @@ export const config = {
     beforeScreenshot: 1000, // ms
   },
 
-  // Отправка скриншотов
+  // Отправка скриншотов в Telegram
   telegram: {
     enabled: process.env.TELEGRAM_ENABLED === 'true',
     botToken: process.env.TELEGRAM_BOT_TOKEN || '',
     chatId: process.env.TELEGRAM_CHAT_ID || '',
+  },
+
+  // Отправка скриншотов в Max.ru
+  max: {
+    enabled: process.env.MAX_ENABLED === 'true',
+    accessToken: process.env.MAX_ACCESS_TOKEN || '',
+    chatId: process.env.MAX_CHAT_ID || '',
   },
 
   // HTTP API для запуска "по требованию"
