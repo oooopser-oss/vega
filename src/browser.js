@@ -75,7 +75,7 @@ export class BrowserManager {
       // Дата "От"
       if (filters.dateFrom) {
         try {
-          await this.page.fill(config.selectors.dateFromInput, filters.dateFrom);
+          await this.page.fill(config.selectors.dateFromInput, filters.dateFrom, { force: true });
           console.log(`  ✓ Дата от: ${filters.dateFrom}`);
         } catch (e) {
           console.log(`  ⚠ Не удалось установить дату "От"`);
@@ -85,21 +85,25 @@ export class BrowserManager {
       // Дата "До"
       if (filters.dateTo) {
         try {
-          await this.page.fill(config.selectors.dateToInput, filters.dateTo);
+          await this.page.fill(config.selectors.dateToInput, filters.dateTo, { force: true });
           console.log(`  ✓ Дата до: ${filters.dateTo}`);
         } catch (e) {
           console.log(`  ⚠ Не удалось установить дату "До"`);
         }
       }
 
-      // Кластеры
+      // Кластеры (input с множественным выбором или select)
       if (filters.clusters && filters.clusters.length > 0) {
         try {
-          const clusterSelect = await this.page.$(config.selectors.clustersSelect);
-          if (clusterSelect) {
-            for (const cluster of filters.clusters) {
-              await this.page.selectOption(config.selectors.clustersSelect, cluster);
-            }
+          const clusterInput = await this.page.$(config.selectors.clusterSelect);
+          if (clusterInput) {
+            // Попытка заполнить как текстовое поле (для multi-select)
+            await this.page.fill(config.selectors.clusterSelect, filters.clusters[0]);
+            // Ждём автодополнения и выбора
+            await this.page.waitForTimeout(500);
+            // Нажимаем на первый результат если появился
+            const firstOption = await this.page.$('[role="option"]');
+            if (firstOption) await firstOption.click();
             console.log(`  ✓ Кластеры: ${filters.clusters.join(', ')}`);
           }
         } catch (e) {
@@ -110,23 +114,42 @@ export class BrowserManager {
       // Тема обращения
       if (filters.theme && filters.theme.length > 0) {
         try {
-          const themeSelect = await this.page.$(config.selectors.themeSelect);
-          if (themeSelect) {
-            for (const t of filters.theme) {
-              await this.page.selectOption(config.selectors.themeSelect, t);
-            }
-            console.log(`  ✓ Тема: ${filters.theme.join(', ')}`);
+          // Основная тема
+          const themeMainInput = await this.page.$(config.selectors.themeMainSelect);
+          if (themeMainInput) {
+            // Для "Технологическое оборудование" или "Новый концепт"
+            const themeName = filters.theme.includes('tech_equipment')
+              ? 'Технологическое оборудование'
+              : 'Новый концепт';
+
+            await this.page.fill(config.selectors.themeMainSelect, themeName);
+            await this.page.waitForTimeout(500);
+
+            const firstOption = await this.page.$('[role="option"]');
+            if (firstOption) await firstOption.click();
+            console.log(`  ✓ Тема: ${themeName}`);
           }
         } catch (e) {
           console.log(`  ⚠ Не удалось применить фильтр по теме`);
         }
       }
 
-      // Статус
+      // Статус (toggle switches)
       if (filters.status && filters.status !== 'all') {
         try {
-          await this.page.selectOption(config.selectors.statusSelect, filters.status);
-          console.log(`  ✓ Статус: ${filters.status}`);
+          if (filters.status === 'in_progress') {
+            const toggle = await this.page.$(config.selectors.statusInProgressToggle);
+            if (toggle && !(await toggle.isChecked())) {
+              await toggle.click();
+            }
+            console.log(`  ✓ Статус: Выполняется`);
+          } else if (filters.status === 'planned') {
+            const toggle = await this.page.$(config.selectors.statusPlannedToggle);
+            if (toggle && !(await toggle.isChecked())) {
+              await toggle.click();
+            }
+            console.log(`  ✓ Статус: Запланирована`);
+          }
         } catch (e) {
           console.log(`  ⚠ Не удалось применить фильтр по статусу`);
         }
@@ -134,11 +157,8 @@ export class BrowserManager {
 
       // Нажимаем кнопку "Применить фильтры"
       try {
-        const applyBtn = await this.page.$(config.selectors.applyFiltersButton);
-        if (applyBtn) {
-          await this.page.click(config.selectors.applyFiltersButton);
-          console.log('  ✓ Кнопка "Применить" нажата');
-        }
+        await this.page.click(config.selectors.applyFiltersButton);
+        console.log('  ✓ Кнопка "Применить" нажата');
       } catch (e) {
         console.log(`  ⚠ Не удалось нажать кнопку применить`);
       }

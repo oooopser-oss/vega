@@ -38,13 +38,41 @@ export const config = {
     submitButton: 'button[type="submit"], button:has-text("Вход")',
     contentArea: 'main, [role="main"], .content',
 
-    // Фильтры
-    dateFromInput: 'input[name="date_from"], input[placeholder*="От"]',
-    dateToInput: 'input[name="date_to"], input[placeholder*="До"]',
-    clustersSelect: 'select[name="clusters"], [data-filter="clusters"]',
-    themeSelect: 'select[name="theme"], [data-filter="theme"]',
-    statusSelect: 'select[name="status"], [data-filter="status"]',
-    applyFiltersButton: 'button:has-text("Применить"), button[type="submit"]',
+    // Фильтры на сайте expl.x5.ru
+    // Тип сущности (вкладки)
+    typeTasksTab: 'button:has-text("Задачи")',
+    typeEstimatesTab: 'button:has-text("Сметы")',
+
+    // Тип инцидента (выпадающий список)
+    incidentTypeSelect: 'select[placeholder*="Выберите тип инцидента"], [data-filter="incident_type"]',
+
+    // Статус задачи (toggle switches)
+    statusInProgressToggle: 'input[name="status_in_progress"], [data-status="in_progress"]',
+    statusPlannedToggle: 'input[name="status_planned"], [data-status="planned"]',
+
+    // Дивизион
+    divisionSelect: 'input[placeholder*="Выберите дивизион"], [data-filter="division"]',
+
+    // Кластер
+    clusterSelect: 'input[placeholder*="Кластер"], [data-filter="cluster"]',
+
+    // Местонахождение объекта
+    locationSelect: 'select[placeholder*="Выберите местонахождение"], [data-filter="location"]',
+
+    // Тема обращения (основная)
+    themeMainSelect: 'input[placeholder*="Технологическое"], [data-filter="theme_main"]',
+
+    // Тема обращения (категория)
+    themeCategorySelect: 'select[placeholder*="Выберите категорию"], [data-filter="theme_category"]',
+
+    // Дата создания (от)
+    dateFromInput: 'input[placeholder*="От"], input[name="date_from"], [data-filter="date_from"]',
+
+    // Дата создания (до)
+    dateToInput: 'input[placeholder*="До"], input[name="date_to"], [data-filter="date_to"]',
+
+    // Кнопка применить фильтры
+    applyFiltersButton: 'button:has-text("Применить"), button:has-text("Поиск"), button[type="submit"]',
   },
 
   // Задержки
