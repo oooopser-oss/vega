@@ -83,115 +83,198 @@ export class BrowserManager {
     try {
       console.log(`\n→ Применение фильтров`);
 
-      // Дата "От"
-      if (filters.dateFrom) {
-        try {
-          await this.page.fill(config.selectors.dateFromInput, filters.dateFrom, { force: true });
-          console.log(`  ✓ Дата от: ${filters.dateFrom}`);
-        } catch (e) {
-          console.log(`  ⚠ Не удалось установить дату "От"`);
-        }
-      }
+      // Жидаем загрузки страницы и появления фильтров
+      await this.page.waitForTimeout(1000);
 
-      // Дата "До"
-      if (filters.dateTo) {
-        try {
-          await this.page.fill(config.selectors.dateToInput, filters.dateTo, { force: true });
-          console.log(`  ✓ Дата до: ${filters.dateTo}`);
-        } catch (e) {
-          console.log(`  ⚠ Не удалось установить дату "До"`);
-        }
-      }
-
-      // Дата решения (план) - от
-      if (filters.planDateFrom) {
-        try {
-          await this.page.fill(config.selectors.planDateFromInput, filters.planDateFrom, { force: true });
-          console.log(`  ✓ Дата решения (план) от: ${filters.planDateFrom}`);
-        } catch (e) {
-          console.log(`  ⚠ Не удалось установить дату решения "От"`);
-        }
-      }
-
-      // Дата решения (план) - до
-      if (filters.planDateTo) {
-        try {
-          await this.page.fill(config.selectors.planDateToInput, filters.planDateTo, { force: true });
-          console.log(`  ✓ Дата решения (план) до: ${filters.planDateTo}`);
-        } catch (e) {
-          console.log(`  ⚠ Не удалось установить дату решения "До"`);
-        }
-      }
-
-      // Кластеры (input с множественным выбором или select)
+      // Кластеры - ОСНОВНОЙ ФИЛЬТР
       if (filters.clusters && filters.clusters.length > 0) {
         try {
-          const clusterInput = await this.page.$(config.selectors.clusterSelect);
-          if (clusterInput) {
-            // Попытка заполнить как текстовое поле (для multi-select)
-            await this.page.fill(config.selectors.clusterSelect, filters.clusters[0]);
-            // Ждём автодополнения и выбора
-            await this.page.waitForTimeout(500);
-            // Нажимаем на первый результат если появился
-            const firstOption = await this.page.$('[role="option"]');
-            if (firstOption) await firstOption.click();
-            console.log(`  ✓ Кластеры: ${filters.clusters.join(', ')}`);
+          console.log(`  → Выбор кластера: ${filters.clusters[0]}`);
+
+          // Ищем input поле для кластера и кликаем на него
+          const clusterInputs = [
+            'input[placeholder*="Кластер"]',
+            'input[data-filter="cluster"]',
+            'input[placeholder*="кластер"]',
+            'input:has-text("Кластер")',
+          ];
+
+          let found = false;
+          for (const selector of clusterInputs) {
+            const element = await this.page.$(selector);
+            if (element) {
+              await element.click();
+              await this.page.waitForTimeout(300);
+              // Вводим название кластера
+              await this.page.keyboard.type(filters.clusters[0]);
+              await this.page.waitForTimeout(500);
+              // Ищем и кликаем на опцию в выпадающем списке
+              const option = await this.page.evaluate((clusterName) => {
+                const options = Array.from(document.querySelectorAll('[role="option"], li, .option, .item'));
+                const match = options.find(opt => opt.textContent.includes(clusterName));
+                return match ? true : false;
+              }, filters.clusters[0]);
+
+              if (option) {
+                // Нажимаем Enter или ищем первую опцию
+                await this.page.keyboard.press('Enter');
+                await this.page.waitForTimeout(300);
+                found = true;
+                console.log(`    ✓ Кластер выбран`);
+                break;
+              }
+            }
+          }
+
+          if (!found) {
+            console.log(`    ⚠ Не удалось найти поле кластера`);
           }
         } catch (e) {
-          console.log(`  ⚠ Не удалось применить фильтр по кластерам`);
+          console.log(`    ⚠ Ошибка при выборе кластера: ${e.message}`);
         }
       }
 
       // Тема обращения
       if (filters.theme && filters.theme.length > 0) {
         try {
-          // Основная тема
-          const themeMainInput = await this.page.$(config.selectors.themeMainSelect);
-          if (themeMainInput) {
-            // Для "Технологическое оборудование" или "Новый концепт"
-            const themeName = filters.theme.includes('tech_equipment')
-              ? 'Технологическое оборудование'
-              : 'Новый концепт';
+          console.log(`  → Выбор темы`);
+          const themeName = filters.theme.includes('tech_equipment')
+            ? 'Технологическое оборудование'
+            : 'Новый концепт';
 
-            await this.page.fill(config.selectors.themeMainSelect, themeName);
-            await this.page.waitForTimeout(500);
+          const themeInputs = [
+            'input[placeholder*="Технологическое"]',
+            'input[data-filter="theme_main"]',
+            'input[placeholder*="Тема"]',
+          ];
 
-            const firstOption = await this.page.$('[role="option"]');
-            if (firstOption) await firstOption.click();
-            console.log(`  ✓ Тема: ${themeName}`);
+          for (const selector of themeInputs) {
+            const element = await this.page.$(selector);
+            if (element) {
+              await element.click();
+              await this.page.waitForTimeout(300);
+              await this.page.keyboard.type(themeName);
+              await this.page.waitForTimeout(500);
+              await this.page.keyboard.press('Enter');
+              await this.page.waitForTimeout(300);
+              console.log(`    ✓ Тема выбрана: ${themeName}`);
+              break;
+            }
           }
         } catch (e) {
-          console.log(`  ⚠ Не удалось применить фильтр по теме`);
+          console.log(`    ⚠ Ошибка при выборе темы: ${e.message}`);
         }
       }
 
-      // Статус (toggle switches)
-      if (filters.status && filters.status !== 'all') {
+      // Дата "От"
+      if (filters.dateFrom) {
         try {
-          if (filters.status === 'in_progress') {
-            const toggle = await this.page.$(config.selectors.statusInProgressToggle);
-            if (toggle && !(await toggle.isChecked())) {
-              await toggle.click();
+          console.log(`  → Дата от: ${filters.dateFrom}`);
+          const dateInputs = [
+            'input[placeholder*="От"]',
+            'input[name="date_from"]',
+            'input[data-filter="date_from"]',
+          ];
+
+          for (const selector of dateInputs) {
+            const element = await this.page.$(selector);
+            if (element) {
+              await element.click();
+              await this.page.waitForTimeout(300);
+              await this.page.keyboard.type(filters.dateFrom);
+              await this.page.waitForTimeout(200);
+              break;
             }
-            console.log(`  ✓ Статус: Выполняется`);
-          } else if (filters.status === 'planned') {
-            const toggle = await this.page.$(config.selectors.statusPlannedToggle);
-            if (toggle && !(await toggle.isChecked())) {
-              await toggle.click();
-            }
-            console.log(`  ✓ Статус: Запланирована`);
           }
         } catch (e) {
-          console.log(`  ⚠ Не удалось применить фильтр по статусу`);
+          console.log(`    ⚠ Ошибка при установке даты "От": ${e.message}`);
         }
       }
 
-      // Нажимаем кнопку "Применить фильтры"
+      // Дата "До"
+      if (filters.dateTo) {
+        try {
+          console.log(`  → Дата до: ${filters.dateTo}`);
+          const dateInputs = [
+            'input[placeholder*="До"]',
+            'input[name="date_to"]',
+            'input[data-filter="date_to"]',
+          ];
+
+          for (const selector of dateInputs) {
+            const element = await this.page.$(selector);
+            if (element) {
+              await element.click();
+              await this.page.waitForTimeout(300);
+              await this.page.keyboard.type(filters.dateTo);
+              await this.page.waitForTimeout(200);
+              break;
+            }
+          }
+        } catch (e) {
+          console.log(`    ⚠ Ошибка при установке даты "До": ${e.message}`);
+        }
+      }
+
+      // Ищем и нажимаем кнопку "Показать" или "Применить" или "Поиск"
+      console.log(`  → Поиск кнопки применения фильтров`);
+
+      let buttonClicked = false;
       try {
-        await this.page.click(config.selectors.applyFiltersButton);
-        console.log('  ✓ Кнопка "Применить" нажата');
+        // Ищем кнопку по тексту используя JavaScript
+        const found = await this.page.evaluate(() => {
+          const buttons = Array.from(document.querySelectorAll('button'));
+          const keywords = ['Показать', 'Применить', 'Поиск', 'Обновить', 'Готово', 'Submit'];
+          const targetButton = buttons.find(btn =>
+            keywords.some(keyword => btn.textContent.includes(keyword))
+          );
+
+          if (targetButton) {
+            targetButton.click();
+            console.log('Button clicked via JS');
+            return targetButton.textContent;
+          }
+          return null;
+        });
+
+        if (found) {
+          console.log(`    ✓ Кнопка "${found.trim()}" нажата`);
+          buttonClicked = true;
+        }
       } catch (e) {
-        console.log(`  ⚠ Не удалось нажать кнопку применить`);
+        console.log(`    ⚠ Ошибка при поиске кнопки: ${e.message}`);
+      }
+
+      // Если JS клик не сработал, пробуем обычные селекторы
+      if (!buttonClicked) {
+        const simpleSelectors = [
+          'button[type="submit"]',
+          'button.submit',
+          'button.btn-primary',
+          '[onclick*="filter"]',
+          '[onclick*="search"]',
+        ];
+
+        for (const selector of simpleSelectors) {
+          try {
+            const button = await this.page.$(selector);
+            if (button) {
+              const isVisible = await button.isVisible().catch(() => false);
+              if (isVisible) {
+                await button.click();
+                console.log(`    ✓ Кнопка нажата`);
+                buttonClicked = true;
+                break;
+              }
+            }
+          } catch (e) {
+            // Игнорируем
+          }
+        }
+      }
+
+      if (!buttonClicked) {
+        console.log(`    ⚠ Кнопка применения не найдена, попытаемся продолжить`);
       }
 
       // Ждём обновления контента
