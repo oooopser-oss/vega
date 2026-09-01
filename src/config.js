@@ -38,50 +38,42 @@ export const config = {
   selectors: {
     loginInput: 'input[type="text"][placeholder*="логин"], input[name="login"]',
     passwordInput: 'input[type="password"]',
-    submitButton: 'button[type="submit"], button:has-text("Вход")',
+    submitButton: 'button[type="submit"]',
     contentArea: 'main, [role="main"], .content',
 
-    // Фильтры на сайте expl.x5.ru
-    // Тип сущности (вкладки)
-    typeTasksTab: 'button:has-text("Задачи")',
-    typeEstimatesTab: 'button:has-text("Сметы")',
+    // Фильтры на сайте expl.x5.ru (используем ID)
+    // Вкладки
+    typeTasksTab: 'button:contains("Задачи")',
+    typeEstimatesTab: 'button.contractor-estimate-btn',
 
-    // Тип инцидента (выпадающий список)
-    incidentTypeSelect: 'select[placeholder*="Выберите тип инцидента"], [data-filter="incident_type"]',
+    // Select2 элементы с фильтрами
+    clusterSelect: '#clusterSelect',           // Кластер
+    divisionSelect: '#divisionSelect',         // Дивизион
+    locationSelect: '#locationSelect',        // Местонахождение
+    themeSelect: '#theme',                     // Тема обращения
+    incidentTypeSelect: '#smhoSelect',         // Тип инцидента
 
-    // Статус задачи (toggle switches)
-    statusInProgressToggle: 'input[name="status_in_progress"], [data-status="in_progress"]',
-    statusPlannedToggle: 'input[name="status_planned"], [data-status="planned"]',
+    // Категория (иерархия)
+    categoryLevel1: '#catlvl1',
+    categoryLevel2: '#catlvl2',
+    categoryLevel3: '#catlvl3',
+    categoryLevel4: '#catlvl4',
 
-    // Дивизион
-    divisionSelect: 'input[placeholder*="Выберите дивизион"], [data-filter="division"]',
+    // Дата создания (для задач)
+    dateFromInput: '#dateStartInc',            // Дата от
+    dateToInput: '#dateEndInc',                // Дата до
 
-    // Кластер
-    clusterSelect: 'input[placeholder*="Кластер"], [data-filter="cluster"]',
+    // Дата для смет
+    dateFromEstInput: '#dateStartEst',         // Дата от смет
+    dateToEstInput: '#dateEndEst',             // Дата до смет
 
-    // Местонахождение объекта
-    locationSelect: 'select[placeholder*="Выберите местонахождение"], [data-filter="location"]',
-
-    // Тема обращения (основная)
-    themeMainSelect: 'input[placeholder*="Технологическое"], [data-filter="theme_main"]',
-
-    // Тема обращения (категория)
-    themeCategorySelect: 'select[placeholder*="Выберите категорию"], [data-filter="theme_category"]',
-
-    // Дата создания (от)
-    dateFromInput: 'input[placeholder*="От"], input[name="date_from"], [data-filter="date_from"]',
-
-    // Дата создания (до)
-    dateToInput: 'input[placeholder*="До"], input[name="date_to"], [data-filter="date_to"]',
-
-    // Дата решения (план) - от
-    planDateFromInput: 'input[placeholder*="План от"], input[name="plan_date_from"], [data-filter="plan_date_from"]',
-
-    // Дата решения (план) - до
-    planDateToInput: 'input[placeholder*="План до"], input[name="plan_date_to"], [data-filter="plan_date_to"]',
-
-    // Кнопка применить фильтры
-    applyFiltersButton: 'button:has-text("Применить"), button:has-text("Поиск"), button[type="submit"]',
+    // Статус задачи (checkboxes)
+    statusPerformedCheckbox: '#performedCheckbox',      // Выполняется
+    statusResolvedCheckbox: '#resolvedCheckbox',        // Решена
+    statusAppointedCheckbox: '#appointedCheckbox',      // На проверке
+    statusClosedCheckbox: '#closedCheckbox',            // Закрыта
+    statusCanceledCheckbox: '#canceledCheckbox',        // Отменена
+    statusPlannedCheckbox: '#plannedCheckbox',          // Запланирована
 
     // Просроченные заявки (красные элементы) - для скрытия на скриншоте
     expiredTasksSelector: '.expired, [data-status="expired"], .overdue, [class*="expired"], [style*="red"]',
