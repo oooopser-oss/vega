@@ -2,14 +2,26 @@
 
 /**
  * Запуск мониторинга для всех профилей подряд
- * Использование: node src/run-all-profiles.js
+ * Использование:
+ *   node src/run-all-profiles.js              - все профили
+ *   node src/run-all-profiles.js --theme tech - только технологическое оборудование
+ *   node src/run-all-profiles.js --theme concept - только новый концепт
  */
 
 import 'dotenv/config';
 import { spawn } from 'child_process';
 import { listProfiles } from './profiles.js';
 
-const profiles = listProfiles();
+const args = process.argv.slice(2);
+const themeIndex = args.indexOf('--theme');
+const theme = themeIndex !== -1 ? args[themeIndex + 1] : null;
+
+let profiles = listProfiles();
+
+// Фильтруем по теме если указана
+if (theme) {
+  profiles = profiles.filter(p => p.id.includes(`-${theme}`) || p.id === theme);
+}
 
 console.log('═══════════════════════════════════════');
 console.log('  Запуск мониторинга для всех профилей');

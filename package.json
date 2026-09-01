@@ -19,6 +19,8 @@
     "cli:c46-concept": "node src/cli.js --profile c46-concept --send-telegram",
     "cli:c49-concept": "node src/cli.js --profile c49-concept --send-telegram",
     "cli:c51-concept": "node src/cli.js --profile c51-concept --send-telegram",
+    "cli:all-tech": "node src/run-all-profiles.js --theme tech",
+    "cli:all-concept": "node src/run-all-profiles.js --theme concept",
     "cli:all": "node src/run-all-profiles.js",
     "view": "node src/view-screenshots.js"
   },
