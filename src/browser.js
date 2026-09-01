@@ -8,10 +8,17 @@ export class BrowserManager {
   }
 
   async launch() {
-    this.browser = await chromium.launch({
+    const launchOptions = {
       headless: config.browser.headless,
       slowMo: config.browser.slowMo,
-    });
+    };
+
+    // Если Chromium предустановлен в системе, используем его
+    if (process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD === '1') {
+      launchOptions.executablePath = '/opt/pw-browsers/chromium';
+    }
+
+    this.browser = await chromium.launch(launchOptions);
     console.log('✓ Браузер запущен');
     return this.browser;
   }
