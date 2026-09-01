@@ -19,39 +19,167 @@ npm install
 
 ## Настройка
 
+### Базовая конфигурация
+
 1. Скопируйте файл конфигурации:
 ```bash
 cp .env.example .env
 ```
 
 2. Отредактируйте `.env` с вашими учётными данными:
-```
+```bash
+# Сайт и учётные данные (обязательно)
 SITE_URL=http://expl.x5.ru
 LOGIN=ваш_логин
 PASSWORD=ваш_пароль
+
+# Папка для скриншотов
 SCREENSHOT_DIR=./screenshots
-HEADLESS=true
-DEBUG=false
+
+# Режимы
+HEADLESS=true    # true = без видимого браузера, false = видимый браузер
+DEBUG=false      # true = медленное выполнение, видны все действия
 ```
 
 ⚠️ **Важно:** Файл `.env` не должен коммититься в git (уже в `.gitignore`)
 
-## Использование
+### Интеграция с Telegram
 
-### Однократный запуск мониторинга:
+Для отправки скриншотов в группу Telegram:
+
+1. Создайте бота через [@BotFather](https://t.me/botfather) в Telegram
+2. Создайте группу и добавьте бота в неё
+3. Получите ID группы (например, через [@userinfobot](https://t.me/userinfobot))
+4. Добавьте в `.env`:
+
 ```bash
-npm start
+TELEGRAM_ENABLED=true
+TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+TELEGRAM_CHAT_ID=-123456789
 ```
 
-или
+Скриншоты будут отправляться с подписью содержащей фильтры и время.
 
+### Настройка фильтров
+
+Отредактируйте `src/config.js`, раздел `filters`:
+
+```javascript
+filters: {
+  dateFrom: null,           // Дата от (YYYY-MM-DD)
+  dateTo: null,             // Дата до (YYYY-MM-DD)
+  clusters: [],             // Кластеры: ['cluster1', 'cluster2']
+  theme: [],                // Тема: ['tech_equipment', 'new_concept']
+  status: 'all',            // Статус: 'all', 'new', 'in_progress', 'completed'
+}
+```
+
+Доступные темы:
+- `tech_equipment` — Технологическое оборудование
+- `new_concept` — Новый концепт
+
+## Использование
+
+### 1️⃣ Основной мониторинг
+
+Однократный запуск с фильтрами из конфига:
 ```bash
 npm run monitor
 ```
 
-### Режим разработки (с автоперезагрузкой):
+Режим разработки (с автоперезагрузкой):
 ```bash
-npm run dev
+npm run monitor:dev
+```
+
+### 2️⃣ CLI - Запуск по требованию
+
+Запуск с параметрами через командную строку:
+
+```bash
+# Простой запуск
+npm run cli
+
+# С фильтрами по дате
+npm run cli -- --date-from 2024-09-01 --date-to 2024-09-30
+
+# Фильтр по кластерам и теме
+npm run cli -- --clusters cluster1,cluster2 --theme tech_equipment
+
+# С отправкой в Telegram
+npm run cli -- --send-telegram
+
+# Все вместе
+npm run cli -- \
+  --date-from 2024-09-01 \
+  --date-to 2024-09-30 \
+  --clusters cluster1 \
+  --theme tech_equipment \
+  --send-telegram
+
+# Справка
+npm run cli -- --help
+```
+
+### 3️⃣ API Server - Запуск "по требованию" через HTTP
+
+Запуск API сервера:
+```bash
+npm run api
+```
+
+Доступные endpoints:
+```bash
+# Проверка статуса
+curl http://localhost:3000/api/health
+
+# Запуск мониторинга (базовый)
+curl -X POST http://localhost:3000/api/monitor
+
+# Запуск с фильтрами
+curl -X POST http://localhost:3000/api/monitor \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filters": {
+      "dateFrom": "2024-09-01",
+      "dateTo": "2024-09-30",
+      "clusters": ["cluster1", "cluster2"],
+      "theme": ["tech_equipment"]
+    }
+  }'
+
+# Получить конфигурацию
+curl http://localhost:3000/api/config
+
+# Получить список скриншотов
+curl http://localhost:3000/api/screenshots
+```
+
+### 4️⃣ Планировщик - Автоматические запуски
+
+Запуск мониторинга каждый час:
+```bash
+npm run scheduler:hourly
+```
+
+Запуск каждый день:
+```bash
+npm run scheduler:daily
+```
+
+Или с кастомным интервалом (в миллисекундах):
+```bash
+npm run scheduler -- --interval=1800000  # Каждые 30 минут
+```
+
+### 5️⃣ Просмотр результатов
+
+Просмотр последних скриншотов:
+```bash
+npm run view
+
+# Показать последние 10 скриншотов
+npm run view -- --limit=10
 ```
 
 ## Структура файлов

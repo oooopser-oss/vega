@@ -70,13 +70,77 @@ export class BrowserManager {
     }
 
     try {
-      console.log(`\n→ Применение фильтров: ${JSON.stringify(filters)}`);
+      console.log(`\n→ Применение фильтров`);
 
-      // Здесь будут селекторы фильтров для конкретного сайта
-      // Пример: выбираем статус
+      // Дата "От"
+      if (filters.dateFrom) {
+        try {
+          await this.page.fill(config.selectors.dateFromInput, filters.dateFrom);
+          console.log(`  ✓ Дата от: ${filters.dateFrom}`);
+        } catch (e) {
+          console.log(`  ⚠ Не удалось установить дату "От"`);
+        }
+      }
+
+      // Дата "До"
+      if (filters.dateTo) {
+        try {
+          await this.page.fill(config.selectors.dateToInput, filters.dateTo);
+          console.log(`  ✓ Дата до: ${filters.dateTo}`);
+        } catch (e) {
+          console.log(`  ⚠ Не удалось установить дату "До"`);
+        }
+      }
+
+      // Кластеры
+      if (filters.clusters && filters.clusters.length > 0) {
+        try {
+          const clusterSelect = await this.page.$(config.selectors.clustersSelect);
+          if (clusterSelect) {
+            for (const cluster of filters.clusters) {
+              await this.page.selectOption(config.selectors.clustersSelect, cluster);
+            }
+            console.log(`  ✓ Кластеры: ${filters.clusters.join(', ')}`);
+          }
+        } catch (e) {
+          console.log(`  ⚠ Не удалось применить фильтр по кластерам`);
+        }
+      }
+
+      // Тема обращения
+      if (filters.theme && filters.theme.length > 0) {
+        try {
+          const themeSelect = await this.page.$(config.selectors.themeSelect);
+          if (themeSelect) {
+            for (const t of filters.theme) {
+              await this.page.selectOption(config.selectors.themeSelect, t);
+            }
+            console.log(`  ✓ Тема: ${filters.theme.join(', ')}`);
+          }
+        } catch (e) {
+          console.log(`  ⚠ Не удалось применить фильтр по теме`);
+        }
+      }
+
+      // Статус
       if (filters.status && filters.status !== 'all') {
-        // await this.page.selectOption('select[name="status"]', filters.status);
-        console.log(`  - Статус: ${filters.status}`);
+        try {
+          await this.page.selectOption(config.selectors.statusSelect, filters.status);
+          console.log(`  ✓ Статус: ${filters.status}`);
+        } catch (e) {
+          console.log(`  ⚠ Не удалось применить фильтр по статусу`);
+        }
+      }
+
+      // Нажимаем кнопку "Применить фильтры"
+      try {
+        const applyBtn = await this.page.$(config.selectors.applyFiltersButton);
+        if (applyBtn) {
+          await this.page.click(config.selectors.applyFiltersButton);
+          console.log('  ✓ Кнопка "Применить" нажата');
+        }
+      } catch (e) {
+        console.log(`  ⚠ Не удалось нажать кнопку применить`);
       }
 
       // Ждём обновления контента

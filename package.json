@@ -5,13 +5,19 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "start": "node src/index.js",
     "monitor": "node src/monitor.js",
-    "dev": "node --watch src/monitor.js"
+    "monitor:dev": "node --watch src/monitor.js",
+    "scheduler": "node src/scheduler.js",
+    "scheduler:hourly": "node src/scheduler.js --interval=3600000",
+    "scheduler:daily": "node src/scheduler.js --interval=86400000",
+    "api": "node src/api-server.js",
+    "cli": "node src/cli.js",
+    "view": "node src/view-screenshots.js"
   },
   "dependencies": {
     "playwright": "^1.40.0",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {}
 }
