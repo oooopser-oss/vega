@@ -13,9 +13,13 @@ export class BrowserManager {
       slowMo: config.browser.slowMo,
     };
 
-    // Если Chromium предустановлен в системе, используем его
-    if (process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD === '1') {
+    // Используем предустановленный Chromium если доступен (Linux remote environment)
+    const isLinux = process.platform === 'linux';
+    if (isLinux && process.env.PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD === '1') {
       launchOptions.executablePath = '/opt/pw-browsers/chromium';
+      console.log('→ Используется предустановленный Chromium');
+    } else if (process.platform === 'win32') {
+      console.log('→ Используется Playwright Chromium для Windows');
     }
 
     this.browser = await chromium.launch(launchOptions);

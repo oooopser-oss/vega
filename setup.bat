@@ -41,6 +41,17 @@ if errorlevel 1 (
 )
 echo ✓ Зависимости установлены
 
+REM Устанавливаем браузеры Playwright
+echo.
+echo → Установка браузеров Playwright (это может занять время)...
+call npx playwright install chromium
+if errorlevel 1 (
+    echo ✗ Ошибка при установке браузеров
+    pause
+    exit /b 1
+)
+echo ✓ Браузеры установлены
+
 REM Создаём .env файл
 echo.
 echo → Создание файла конфигурации (.env)...

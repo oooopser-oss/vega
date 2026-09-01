@@ -5,6 +5,7 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
+    "setup": "npm install && npx playwright install",
     "monitor": "node src/monitor.js",
     "monitor:dev": "node --watch src/monitor.js",
     "scheduler": "node src/scheduler.js",
