@@ -12,6 +12,14 @@
     "scheduler:daily": "node src/scheduler.js --interval=86400000",
     "api": "node src/api-server.js",
     "cli": "node src/cli.js",
+    "cli:profiles": "node src/cli.js --list-profiles",
+    "cli:c46-tech": "node src/cli.js --profile c46-tech --send-telegram",
+    "cli:c49-tech": "node src/cli.js --profile c49-tech --send-telegram",
+    "cli:c51-tech": "node src/cli.js --profile c51-tech --send-telegram",
+    "cli:c46-concept": "node src/cli.js --profile c46-concept --send-telegram",
+    "cli:c49-concept": "node src/cli.js --profile c49-concept --send-telegram",
+    "cli:c51-concept": "node src/cli.js --profile c51-concept --send-telegram",
+    "cli:all": "node src/run-all-profiles.js",
     "view": "node src/view-screenshots.js"
   },
   "dependencies": {

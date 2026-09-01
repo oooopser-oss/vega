@@ -6,6 +6,7 @@ import BrowserManager from './browser.js';
 import ScreenshotManager from './screenshot-manager.js';
 import TelegramSender from './telegram-sender.js';
 import MaxSender from './max-sender.js';
+import { profiles, getProfile, listProfiles } from './profiles.js';
 import config from './config.js';
 
 const SITE_URL = process.env.SITE_URL || 'http://expl.x5.ru';
@@ -48,6 +49,7 @@ async function main() {
 
   // Справка
   if (args.help || Object.keys(args).length === 0) {
+    const profilesList = listProfiles();
     console.log(`
   📸 CLI Мониторинга Заявок
   ═════════════════════════════
@@ -55,36 +57,55 @@ async function main() {
   Использование: node src/cli.js [опции]
 
   Опции:
+    --profile PROFILE     ID профиля (см. ниже)
     --date-from DATE      Дата от (YYYY-MM-DD)
     --date-to DATE        Дата до (YYYY-MM-DD)
     --clusters NAMES      Кластеры (через запятую: cluster1,cluster2)
     --theme THEME         Тема (tech_equipment,new_concept)
     --status STATUS       Статус (all, new, in_progress, completed)
     --send-telegram       Отправить в Telegram
+    --list-profiles       Показать все профили
     --help                Справка
 
+  Доступные профили:
+  `);
+
+    for (const p of profilesList) {
+      console.log(`    ${p.id.padEnd(15)} - ${p.name}`);
+    }
+
+    console.log(`
   Примеры:
-    # Простой запуск
-    node src/cli.js
+    # Профиль: Кластер 46 - Технологическое оборудование
+    node src/cli.js --profile c46-tech
 
-    # С фильтрами по дате
-    node src/cli.js --date-from 2024-09-01 --date-to 2024-09-30
+    # Профиль: Все кластеры - Все темы
+    node src/cli.js --profile all
 
-    # Фильтр по кластерам и теме
-    node src/cli.js --clusters cluster1,cluster2 --theme tech_equipment
+    # С дополнительными фильтрами
+    node src/cli.js --profile c46-tech --date-from 2024-09-01 --date-to 2024-09-30
 
     # С отправкой в Telegram
-    node src/cli.js --send-telegram
+    node src/cli.js --profile c46-tech --send-telegram
 
-    # Все вместе
-    node src/cli.js \\
-      --date-from 2024-09-01 \\
-      --date-to 2024-09-30 \\
-      --clusters cluster1 \\
-      --theme tech_equipment \\
-      --send-telegram
+    # Кастомные фильтры (без профиля)
+    node src/cli.js --clusters cluster1,cluster2 --theme tech_equipment
+
+    # Все профили
+    node src/cli.js --list-profiles
   `);
     if (args.help) process.exit(0);
+  }
+
+  // Показать все профили
+  if (args['list-profiles']) {
+    console.log('\n📋 Доступные профили:\n');
+    const profilesList = listProfiles();
+    for (const p of profilesList) {
+      console.log(`  ${p.id.padEnd(15)} - ${p.name}`);
+    }
+    console.log('');
+    process.exit(0);
   }
 
   const browser = new BrowserManager();
@@ -99,13 +120,33 @@ async function main() {
     await browser.createPage();
 
     // Формируем фильтры
-    const filters = {
+    let filters = {
       dateFrom: args['date-from'] || config.filters.dateFrom,
       dateTo: args['date-to'] || config.filters.dateTo,
       clusters: args.clusters || config.filters.clusters,
       theme: args.theme || config.filters.theme,
       status: args.status || config.filters.status,
     };
+
+    // Если задан профиль, используем его фильтры
+    if (args.profile) {
+      const profile = getProfile(args.profile);
+      if (!profile) {
+        console.error(`✗ Профиль "${args.profile}" не найден`);
+        console.log('Доступные профили:');
+        listProfiles().forEach(p => console.log(`  - ${p.id}`));
+        process.exit(1);
+      }
+
+      console.log(`\n📌 Используется профиль: ${profile.name}\n`);
+      filters = {
+        ...profile.filters,
+        // Перекрываем профиль аргументами командной строки если они переданы
+        dateFrom: args['date-from'] || profile.filters.dateFrom,
+        dateTo: args['date-to'] || profile.filters.dateTo,
+        status: args.status || profile.filters.status,
+      };
+    }
 
     console.log('Параметры запуска:\n');
     console.log(`  Сайт: ${SITE_URL}`);
