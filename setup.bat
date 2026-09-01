@@ -63,8 +63,22 @@ echo  ✓ Установка завершена!
 echo ═══════════════════════════════════════
 echo.
 echo Теперь запустите один из файлов:
-echo   • run-all.bat       - запустить мониторинг всех кластеров
-echo   • run-c46-tech.bat  - запустить Кластер 46 (Технологическое)
-echo   • run-c46-concept.bat - запустить Кластер 46 (Концепт)
+echo.
+echo  Все кластеры:
+echo   • run-all.bat           - все кластеры, все темы
+echo   • run-all-tech.bat      - все кластеры (технологическое)
+echo   • run-all-concept.bat   - все кластеры (новый концепт)
+echo.
+echo  Кластер 46:
+echo   • run-c46-tech.bat      - кластер 46 (технологическое)
+echo   • run-c46-concept.bat   - кластер 46 (новый концепт)
+echo.
+echo  Кластер 49:
+echo   • run-c49-tech.bat      - кластер 49 (технологическое)
+echo   • run-c49-concept.bat   - кластер 49 (новый концепт)
+echo.
+echo  Кластер 51:
+echo   • run-c51-tech.bat      - кластер 51 (технологическое)
+echo   • run-c51-concept.bat   - кластер 51 (новый концепт)
 echo.
 pause
