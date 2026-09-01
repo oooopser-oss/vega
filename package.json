@@ -1,0 +1,17 @@
+{
+  "name": "website-screenshots-monitor",
+  "version": "1.0.0",
+  "description": "Automatic website monitoring with screenshots",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "monitor": "node src/monitor.js",
+    "dev": "node --watch src/monitor.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {}
+}
