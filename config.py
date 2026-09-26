@@ -20,12 +20,15 @@ class Config:
     DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///instagram_bot.db')
 
     # Engagement settings
-    AUTO_LIKE = os.getenv('AUTO_LIKE', 'True') == 'True'
-    AUTO_FOLLOW = os.getenv('AUTO_FOLLOW', 'True') == 'True'
+    # ВНИМАНИЕ: массовые авто-лайки/авто-подписки на чужих людей по хештегам
+    # нарушают условия использования Instagram и могут привести к блокировке
+    # аккаунта. По умолчанию выключено — включайте осознанно.
+    AUTO_LIKE = os.getenv('AUTO_LIKE', 'False') == 'True'
+    AUTO_FOLLOW = os.getenv('AUTO_FOLLOW', 'False') == 'True'
     AUTO_COMMENT = os.getenv('AUTO_COMMENT', 'False') == 'True'
     AUTO_DM = os.getenv('AUTO_DM', 'False') == 'True'
 
-    # Daily limits (to avoid detection)
+    # Daily limits (снижают риск блокировки, если авто-вовлечение всё же включено)
     DAILY_LIKES_LIMIT = int(os.getenv('DAILY_LIKES_LIMIT', '100'))
     DAILY_FOLLOWS_LIMIT = int(os.getenv('DAILY_FOLLOWS_LIMIT', '50'))
     DAILY_COMMENTS_LIMIT = int(os.getenv('DAILY_COMMENTS_LIMIT', '30'))
