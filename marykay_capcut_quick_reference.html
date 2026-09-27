@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mary Kay CapCut Быстрая Инструкция</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #E91E63 0%, #FF6B9D 100%);
+            color: white;
+            padding: 30px 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            background: white;
+            border: 2px solid #E91E63;
+            color: #E91E63;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            background: #E91E63;
+            color: white;
+        }
+
+        .tab-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .video-card {
+            background: linear-gradient(135deg, #fff 0%, #f9f9f9 100%);
+            border-left: 5px solid #E91E63;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .video-card h2 {
+            color: #E91E63;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .timeline {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .time {
+            color: #E91E63;
+            font-weight: bold;
+            min-width: 60px;
+        }
+
+        .content {
+            flex: 1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #E91E63;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .checklist {
+            list-style: none;
+            margin: 20px 0;
+        }
+
+        .checklist li {
+            padding: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checklist input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .tip {
+            background: #FFF3E0;
+            border-left: 4px solid #FF9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .tip strong {
+            color: #E65100;
+        }
+
+        .warning {
+            background: #FFEBEE;
+            border-left: 4px solid #F44336;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .warning strong {
+            color: #C62828;
+        }
+
+        .step-by-step {
+            counter-reset: steps;
+            list-style: none;
+            margin: 20px 0;
+        }
+
+        .step-by-step li {
+            counter-increment: steps;
+            margin-bottom: 15px;
+            padding-left: 40px;
+            position: relative;
+        }
+
+        .step-by-step li:before {
+            content: counter(steps);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #E91E63;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .music-suggestions {
+            background: #E8F5E9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .music-suggestions strong {
+            color: #1B5E20;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #E91E63;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab-button {
+                width: 100%;
+            }
+
+            .container {
+                padding: 10px;
+            }
+
+            .tab-content {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎬 Mary Kay - CapCut Инструкция</h1>
+            <p>Быстрый гайд для создания вирусных РЕАЛС видео</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="switchTab('video1')">Видео #1 (30сек)</button>
+            <button class="tab-button" onclick="switchTab('video2')">Видео #2 (60сек) ⭐</button>
+            <button class="tab-button" onclick="switchTab('video3')">Видео #3 (40сек)</button>
+            <button class="tab-button" onclick="switchTab('video4')">Видео #4 (45сек)</button>
+            <button class="tab-button" onclick="switchTab('checklist')">Чеклист</button>
+        </div>
+
+        <!-- VIDEO 1 -->
+        <div id="video1" class="tab-content active">
+            <div class="video-card">
+                <h2>📖 День рождения бизнеса (30 сек)</h2>
+                <p><strong>Жанр:</strong> Эмоциональная история бизнеса</p>
+                <p><strong>Время на съемку:</strong> 15 минут | <strong>Монтаж:</strong> 20 минут</p>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">📋 Что нужно снять:</h3>
+                <ul class="step-by-step">
+                    <li><strong>Черный экран</strong> (1-2 сек) - закройте камеру рукой или используйте черный фон</li>
+                    <li><strong>Первая посылка</strong> - фото вашего первого заказа Mary Kay</li>
+                    <li><strong>4 фото прогресса</strong> - месяц 1 → 3 → 6 → 12 (любые фото роста)</li>
+                    <li><strong>Видео упаковки</strong> (8-10 сек) - руки упаковывают 3-4 посылки. Снимайте сверху!</li>
+                    <li><strong>3-4 фото клиентов</strong> - улыбающиеся люди (можно со стоков)</li>
+                    <li><strong>Ваше селфи</strong> - счастливое лицо, улыбка</li>
+                </ul>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">⏱️ Временная шкала:</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <span class="time">00-02</span>
+                        <div class="content">Черный экран + "3 года назад..." (крупный текст)</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">02-05</span>
+                        <div class="content">Фото посылки + "День 1" (Fade переход)</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">05-10</span>
+                        <div class="content">Быстрая смена 4 фото (месяцы) + Zoom эффект (2x скорость)</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">10-18</span>
+                        <div class="content">Видео упаковки посылок + "500+ клиентов"</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">18-25</span>
+                        <div class="content">Коллаж фото клиентов + "Спасибо вам!"</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">25-30</span>
+                        <div class="content">Селфи (Spin effect) + "Люблю свою работу 💖"</div>
+                    </div>
+                </div>
+
+                <div class="tip">
+                    <strong>💡 Совет:</strong> Этот видеоролик эмоциональный. Покажите настоящие чувства! Аудитория предпочитает аутентичность.
+                </div>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">🎵 Музыка:</h3>
+                <div class="music-suggestions">
+                    <strong>Жанр:</strong> Трогательная, вдохновляющая (Emotional Piano)<br>
+                    <strong>Где найти:</strong> YouTube Audio Library → "Piano" → "Inspiring"<br>
+                    <strong>Длина:</strong> 30 сек<br>
+                    <strong>Громкость:</strong> 70%
+                </div>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">🏷️ Хештеги:</h3>
+                <p>#marykay #beautybusiness #красота #результаты #entrepreneur #success #businesswoman</p>
+            </div>
+        </div>
+
+        <!-- VIDEO 2 -->
+        <div id="video2" class="tab-content">
+            <div class="video-card">
+                <h2>💄 Макияж за 60 сек (60 сек) ⭐ ВИРУСНЫЙ</h2>
+                <p><strong>Жанр:</strong> Быстрый макияж-трансформация</p>
+                <p><strong>Время на съемку:</strong> 25 минут | <strong>Монтаж:</strong> 25 минут</p>
+
+                <div class="warning">
+                    <strong>⚠️ Это самое вирусное видео!</strong> Уделите внимание деталям и съемке. Крупные планы = больше лайков!
+                </div>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">📋 Что снимать - ПО ОЧЕРЕДИ:</h3>
+                <table>
+                    <tr>
+                        <th>Сек</th>
+                        <th>Что снимать</th>
+                        <th>Совет</th>
+                    </tr>
+                    <tr>
+                        <td>00-10</td>
+                        <td>Нанесение праймера (крупный план лица)</td>
+                        <td>Медленно! Видны движения рук, текстура крема</td>
+                    </tr>
+                    <tr>
+                        <td>10-20</td>
+                        <td>Тональник + консилер под глаза (slow-motion)</td>
+                        <td>Очень медленно, покажите каждое движение</td>
+                    </tr>
+                    <tr>
+                        <td>20-33</td>
+                        <td>Тени (быстро) + румяна (красивый жест)</td>
+                        <td>Чередуйте скорость: тени быстро, румяна медленно</td>
+                    </tr>
+                    <tr>
+                        <td>33-42</td>
+                        <td>Тушь (КРУПНЫЙ ПЛАН!) + брови</td>
+                        <td>Это должно быть видно четко! Камера на уровне глаз</td>
+                    </tr>
+                    <tr>
+                        <td>42-55</td>
+                        <td>Помада (МЕДЛЕННО! 0.75x)</td>
+                        <td>Самая важная часть! Показать каждое движение</td>
+                    </tr>
+                    <tr>
+                        <td>55-60</td>
+                        <td>Финальное селфи (полный макияж)</td>
+                        <td>Улыбка, радость, небольшое движение головы</td>
+                    </tr>
+                </table>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">⏱️ Текст на видео:</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <span class="time">00-02</span>
+                        <div class="content">"МАКИЯЖ за 60 сек! ⏱️" - ОГРОМНЫЙ текст</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">02-10</span>
+                        <div class="content">"STEP 1: PRIMER"</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">10-20</span>
+                        <div class="content">"STEP 2: BASE MAKEUP"</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">20-33</span>
+                        <div class="content">"STEP 3: EYES & BLUSH"</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">33-42</span>
+                        <div class="content">"STEP 4: EYES MAKEUP"</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">42-55</span>
+                        <div class="content">"STEP 5: LIPS"</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">55-60</span>
+                        <div class="content">"ГОТОВА! ✨" - Спин эффект</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">🎵 Музыка:</h3>
+                <div class="music-suggestions">
+                    <strong>Жанр:</strong> Энергичная, диско/поп (Upbeat Pop)<br>
+                    <strong>Где найти:</strong> YouTube Audio Library → "Pop" или "Upbeat"<br>
+                    <strong>Длина:</strong> 60 сек<br>
+                    <strong>Громкость:</strong> 80% (музыка нарастает к концу)
+                </div>
+
+                <div class="tip">
+                    <strong>💡 Технические советы:</strong><br>
+                    • Хороший свет - основа всего!<br>
+                    • Несколько дублей каждого шага<br>
+                    • Крупные планы = больше просмотров<br>
+                    • Медленно наносите косметику (потом ускорите в CapCut)
+                </div>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">🏷️ Хештеги:</h3>
+                <p>#marykay #reels #viral #makeup #макияж #beautyreels #makeuptutorial</p>
+            </div>
+        </div>
+
+        <!-- VIDEO 3 -->
+        <div id="video3" class="tab-content">
+            <div class="video-card">
+                <h2>🌅 Утро за 5 минут (40 сек)</h2>
+                <p><strong>Жанр:</strong> Утренний уход за кожей (ASMR)</p>
+                <p><strong>Время на съемку:</strong> 20 минут | <strong>Монтаж:</strong> 20 минут</p>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">📋 Что снимать:</h3>
+                <table>
+                    <tr>
+                        <th>Этап</th>
+                        <th>Время</th>
+                        <th>Описание</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Проснулись</strong></td>
+                        <td>00-03</td>
+                        <td>Лицо БЕЗ макияжа + текст "6:30 AM ☀️"</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Очищение</strong></td>
+                        <td>03-08</td>
+                        <td>Наносите очищающий крем (медленно, ASMR звуки)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Тонизирование</strong></td>
+                        <td>08-13</td>
+                        <td>Спрей тонер → промокиваем (slow-motion)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Сыворотка</strong></td>
+                        <td>13-18</td>
+                        <td>Капли сыворотки (КРУПНЫЙ ПЛАН!) → нанесение</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Крем</strong></td>
+                        <td>18-25</td>
+                        <td>Дневной крем → впитывание (fast-forward эффект)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ББ крем</strong></td>
+                        <td>25-32</td>
+                        <td>Наносите ББ крем (быстро) → свежее лицо</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Финал</strong></td>
+                        <td>32-40</td>
+                        <td>Готовое лицо + селфи + "ГОТОВА К ДНЮ! ✨"</td>
+                    </tr>
+                </table>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">🎵 Музыка:</h3>
+                <div class="music-suggestions">
+                    <strong>Жанр:</strong> Спокойная, расслабляющая, утренняя (Zen, Relaxing)<br>
+                    <strong>Где найти:</strong> YouTube Audio Library → "Relaxing" или "Ambient"<br>
+                    <strong>Длина:</strong> 40 сек
+                </div>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">🏷️ Хештеги:</h3>
+                <p>#skincare #уходкожа #marykay #beautyroutine #skincareroutine #morningroutine</p>
+            </div>
+        </div>
+
+        <!-- VIDEO 4 -->
+        <div id="video4" class="tab-content">
+            <div class="video-card">
+                <h2>✨ Результаты клиентов (45 сек)</h2>
+                <p><strong>Жанр:</strong> Before/After трансформация</p>
+                <p><strong>Время на подготовку:</strong> 20 минут | <strong>Монтаж:</strong> 20 минут</p>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">📋 Структура видео:</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <span class="time">00-03</span>
+                        <div class="content"><strong>Титр:</strong> "РЕЗУЛЬТАТЫ РЕАЛЬНЫХ КЛИЕНТОВ 💖"</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">03-15</span>
+                        <div class="content"><strong>Before/After #1:</strong> Проблемная кожа → чистая кожа (30 дней)</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">15-25</span>
+                        <div class="content"><strong>Before/After #2:</strong> Натуральное лицо → макияж</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">25-35</span>
+                        <div class="content"><strong>Before/After #3:</strong> Коллаж трансформации + "Красиво, правда?"</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">35-43</span>
+                        <div class="content"><strong>CTA:</strong> "Это ВАША история? Давайте создадим её вместе!" + Zoom эффект</div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="time">43-45</span>
+                        <div class="content"><strong>Финал:</strong> "👉 Закажите консультацию, ДМ в профиле"</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">📸 Что нужно:</h3>
+                <ul class="step-by-step">
+                    <li>3-4 фото "до" и "после" (можно свои или клиентов)</li>
+                    <li>Before/After нужно показать side-by-side (рядом) или slider (слайдер)</li>
+                    <li>Используйте эффекты: Fade, Slide, или Split-screen</li>
+                </ul>
+
+                <div class="tip">
+                    <strong>💡 Совет по Before/After:</strong><br>
+                    Самый вирусный формат - это SLIDER! Когда зритель видит "до" слева, потом проводит пальцем (или видит переход) и видит "после" справа. В CapCut используйте эффект Slide для этого.
+                </div>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">🎵 Музыка:</h3>
+                <div class="music-suggestions">
+                    <strong>Жанр:</strong> Торжественная, вдохновляющая (Success, Triumphant)<br>
+                    <strong>Где найти:</strong> YouTube Audio Library → "Inspiring" или "Success"<br>
+                    <strong>Длина:</strong> 45 сек<br>
+                    <strong>Эффект звука:</strong> Добавьте "Wow!" или аплодисменты на 25-35 сек
+                </div>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">🏷️ Хештеги:</h3>
+                <p>#beforeandafter #результат #transformation #marykay #beauty #skincare</p>
+            </div>
+        </div>
+
+        <!-- CHECKLIST -->
+        <div id="checklist" class="tab-content">
+            <div class="video-card">
+                <h2>✅ Чеклист подготовки к съемке</h2>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">📱 Оборудование и подготовка:</h3>
+                <ul class="checklist">
+                    <li><input type="checkbox"> Смартфон заряжен (минимум 60%)</li>
+                    <li><input type="checkbox"> Свободно минимум 1GB памяти</li>
+                    <li><input type="checkbox"> CapCut установлен и обновлен</li>
+                    <li><input type="checkbox"> Штатив или подставка для телефона</li>
+                    <li><input type="checkbox"> Естественный свет (рядом окно)</li>
+                </ul>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">💄 Косметика и продукты:</h3>
+                <ul class="checklist">
+                    <li><input type="checkbox"> Все продукты Mary Kay подготовлены</li>
+                    <li><input type="checkbox"> Праймер</li>
+                    <li><input type="checkbox"> Тональник (ваш оттенок)</li>
+                    <li><input type="checkbox"> Консилер</li>
+                    <li><input type="checkbox"> Тени для век</li>
+                    <li><input type="checkbox"> Румяна</li>
+                    <li><input type="checkbox"> Тушь</li>
+                    <li><input type="checkbox"> Помада (яркая, контрастная)</li>
+                    <li><input type="checkbox"> Сыворотка и кремы (для видео #3)</li>
+                </ul>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">🎥 Перед съемкой:</h3>
+                <ul class="checklist">
+                    <li><input type="checkbox"> Очистите камеру телефона от грязи</li>
+                    <li><input type="checkbox"> Выключите уведомления (Settings → Do Not Disturb)</li>
+                    <li><input type="checkbox"> Выключите автоповорот экрана (для стабильного видео)</li>
+                    <li><input type="checkbox"> Откройте камеру и проверьте свет</li>
+                    <li><input type="checkbox"> Снимите украшения, которые отвлекают</li>
+                    <li><input type="checkbox"> Фон чист (нет лишних предметов)</li>
+                </ul>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">📹 Советы во время съемки:</h3>
+                <ul class="step-by-step">
+                    <li>Снимайте несколько дублей каждого видео (выберите лучший позже)</li>
+                    <li>Крупные планы лучше, чем общие планы</li>
+                    <li>Используйте естественный свет (избегайте теней на лице)</li>
+                    <li>Движения медленнее = смотрится красивее</li>
+                    <li>Смотрите в камеру и улыбайтесь (даже если не видите себя)</li>
+                    <li>Сначала снимите ВСЕ видео, потом монтируйте</li>
+                </ul>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">📝 Монтаж в CapCut (общие шаги):</h3>
+                <ul class="step-by-step">
+                    <li>Откройте CapCut → "Create a video"</li>
+                    <li>Добавьте все видео/фото в правильном порядке</li>
+                    <li>Расположите их на временной шкале согласно временному коду</li>
+                    <li>Добавьте текст (большой, четкий, белый или контрастный)</li>
+                    <li>Добавьте эффекты переходов между фрагментами</li>
+                    <li>Отрегулируйте скорость видео (normal, slow-motion, fast-forward)</li>
+                    <li>Добавьте музыку (80% громкость)</li>
+                    <li>Проверьте весь видеоролик</li>
+                    <li>Экспортируйте: 1080x1920, 30fps, MP4</li>
+                </ul>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">⏱️ Расчет времени:</h3>
+                <table>
+                    <tr>
+                        <th>Видео</th>
+                        <th>Съемка</th>
+                        <th>Монтаж</th>
+                        <th>Экспорт</th>
+                        <th>Всего</th>
+                    </tr>
+                    <tr>
+                        <td>#1 (30сек)</td>
+                        <td>15 мин</td>
+                        <td>20 мин</td>
+                        <td>5 мин</td>
+                        <td><strong>40 мин</strong></td>
+                    </tr>
+                    <tr>
+                        <td>#2 (60сек) ⭐</td>
+                        <td>25 мин</td>
+                        <td>25 мин</td>
+                        <td>5 мин</td>
+                        <td><strong>55 мин</strong></td>
+                    </tr>
+                    <tr>
+                        <td>#3 (40сек)</td>
+                        <td>20 мин</td>
+                        <td>20 мин</td>
+                        <td>5 мин</td>
+                        <td><strong>45 мин</strong></td>
+                    </tr>
+                    <tr>
+                        <td>#4 (45сек)</td>
+                        <td>20 мин</td>
+                        <td>20 мин</td>
+                        <td>5 мин</td>
+                        <td><strong>45 мин</strong></td>
+                    </tr>
+                    <tr style="background: #E91E63; color: white;">
+                        <td><strong>ВСЕГО</strong></td>
+                        <td><strong>80 мин</strong></td>
+                        <td><strong>85 мин</strong></td>
+                        <td><strong>20 мин</strong></td>
+                        <td><strong>3 часа</strong></td>
+                    </tr>
+                </table>
+
+                <div class="warning">
+                    <strong>⚠️ Помните:</strong> Не старайтесь сделать всё идеально! Аудитория предпочитает натуральные, живые видео. Лучше снимайте, монтируйте и загружайте, чем долго совершенствовать.
+                </div>
+
+                <h3 style="margin-top: 20px; color: #E91E63;">🚀 План публикации:</h3>
+                <ul class="step-by-step">
+                    <li><strong>День 1:</strong> Загрузите видео #1 ("День рождения") - легко снимать</li>
+                    <li><strong>День 3:</strong> Загрузите видео #2 ("Макияж") - самое вирусное!</li>
+                    <li><strong>День 5:</strong> Загрузите видео #3 ("Утро") - спокойное, для разнообразия</li>
+                    <li><strong>День 7:</strong> Загрузите видео #4 ("Результаты") - вовлечение аудитории</li>
+                    <li><strong>Затем повторяйте:</strong> 2-3 видео в неделю, ротация всех 4</li>
+                </ul>
+
+                <div class="tip">
+                    <strong>💡 Идеальное время публикации:</strong><br>
+                    • Пн-Пт: 09:00, 13:00, 17:00, 20:00<br>
+                    • Сб-Вс: 12:00, 15:00, 19:00
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>💪 Вы готовы создавать вирусные видео! Начните с видео #2 (Макияж) - это самое интересное!</p>
+        <p>Больше нет оправданий - только действие! 🚀</p>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Remove active class from buttons
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
