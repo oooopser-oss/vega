@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Optional
 from instagrapi import Client
-from instagrapi.exceptions import LoginRequired
+from instagrapi.exceptions import LoginRequired, TwoFactorRequired
 from config import Config
 
 # Ensure directories exist
@@ -34,22 +34,34 @@ class InstagramBot:
             'posts': 0
         }
 
+    def _session_file(self) -> Path:
+        return Path("sessions") / f"{Config.INSTAGRAM_USERNAME}_session.json"
+
     def login(self) -> bool:
         try:
+            session_file = self._session_file()
+            session_file.parent.mkdir(exist_ok=True)
+
             # Try to load saved session first
-            try:
-                self.client.load_settings(Config.INSTAGRAM_USERNAME)
-                logger.info(f"Loaded saved session for {Config.INSTAGRAM_USERNAME}")
-                self.is_logged_in = True
-                return True
-            except Exception:
-                pass
+            if session_file.exists():
+                try:
+                    self.client.load_settings(session_file)
+                    logger.info(f"Loaded saved session for {Config.INSTAGRAM_USERNAME}")
+                except Exception:
+                    logger.debug("Could not load saved session, logging in fresh")
 
             # Set up challenge handler for Instagram verification
             self.client.challenge_code_handler = self._handle_challenge
 
             # Login with credentials
-            self.client.login(Config.INSTAGRAM_USERNAME, Config.INSTAGRAM_PASSWORD)
+            try:
+                self.client.login(Config.INSTAGRAM_USERNAME, Config.INSTAGRAM_PASSWORD)
+            except TwoFactorRequired:
+                print("\nInstagram запросил код двухфакторной аутентификации")
+                code = input("Введите код подтверждения: ").strip()
+                self.client.login(Config.INSTAGRAM_USERNAME, Config.INSTAGRAM_PASSWORD, verification_code=code)
+
+            self.client.dump_settings(session_file)
             self.is_logged_in = True
             logger.info(f"Successfully logged in as {Config.INSTAGRAM_USERNAME}")
             return True
@@ -71,14 +83,13 @@ class InstagramBot:
     def logout(self):
         if self.is_logged_in:
             try:
-                self.client.save_settings(Config.INSTAGRAM_USERNAME)
+                self.client.dump_settings(self._session_file())
                 logger.info("Session saved for next login")
             except Exception as e:
                 logger.debug(f"Could not save session: {str(e)}")
 
-            self.client.logout()
             self.is_logged_in = False
-            logger.info("Logged out successfully")
+            logger.info("Stopped (session kept for next login)")
 
     def like_posts_by_hashtags(self, hashtags: Optional[List[str]] = None) -> int:
         if not self.is_logged_in:
