@@ -1,0 +1,58 @@
+import { PortfolioItem } from "@/types";
+
+export const portfolio: PortfolioItem[] = [
+  {
+    slug: "kolcovo-topas-5",
+    title: "Монтаж Топас 5 для дома постоянного проживания",
+    city: "Кольцово",
+    productBrand: "Топас",
+    durationDays: 2,
+    description: "Станция установлена на участке с высоким уровнем грунтовых вод, с системой анти-всплытия.",
+    imageId: "project-kolcovo",
+  },
+  {
+    slug: "sysert-evrobion-6",
+    title: "Замена старого септика на станцию Евробион 6",
+    city: "Сысерть",
+    productBrand: "Евробион",
+    durationDays: 1,
+    description: "Демонтаж старого накопительного септика и установка станции глубокой очистки за один день.",
+    imageId: "project-sysert",
+  },
+  {
+    slug: "berezovsky-malahit-8",
+    title: "Монтаж Малахит 8 для двух домовладений",
+    city: "Берёзовский",
+    productBrand: "Малахит",
+    durationDays: 3,
+    description: "Общая станция на два соседних участка с разводкой труб под уклон рельефа.",
+    imageId: "project-berezovsky",
+  },
+  {
+    slug: "revda-kit-6",
+    title: "Установка КИТ 6 на сложном глинистом грунте",
+    city: "Ревда",
+    productBrand: "КИТ",
+    durationDays: 2,
+    description: "Дополнительное дренирование котлована перед монтажом из-за плотного глинистого грунта.",
+    imageId: "project-revda",
+  },
+  {
+    slug: "pervouralsk-triton-t4",
+    title: "Монтаж накопительного септика Тритон Т4",
+    city: "Первоуральск",
+    productBrand: "Тритон",
+    durationDays: 1,
+    description: "Дачный дом с сезонным проживанием, септик с полем фильтрации на выходе.",
+    imageId: "project-pervouralsk",
+  },
+  {
+    slug: "nizhniy-tagil-evrolos-8",
+    title: "Монтаж Евролос Про 8 для большого дома",
+    city: "Нижний Тагил",
+    productBrand: "Евролос",
+    durationDays: 3,
+    description: "Станция повышенной производительности для дома с 2 санузлами и постоянным проживанием.",
+    imageId: "project-tagil",
+  },
+];
