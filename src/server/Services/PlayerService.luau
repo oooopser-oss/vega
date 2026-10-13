@@ -120,6 +120,9 @@ local function onCharacter(player, char)
 	task.wait()
 	local cf = spawnCFrame(player)
 	if cf then
+		pcall(function()
+			player:RequestStreamAroundAsync(cf.Position, 5)
+		end)
 		char:PivotTo(cf)
 	end
 	if (player:GetAttribute("Jailed") or 0) <= 0 then

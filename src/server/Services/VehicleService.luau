@@ -30,6 +30,7 @@ local function buildCar(carId, cf, owner)
 	local def = Config.Cars[carId]
 	local model = Instance.new("Model")
 	model.Name = owner.Name .. "_" .. carId
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	model:SetAttribute("Owner", owner.UserId)
 	model:SetAttribute("CarId", carId)
 	model:SetAttribute("MaxSpeed", def.Speed)

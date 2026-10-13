@@ -28,7 +28,8 @@ WorldBuilder.World = World
 local City
 
 local function part(props)
-	local p = Instance.new("Part")
+	local p = Instance.new(props.ClassName or "Part")
+	props.ClassName = nil
 	p.Anchored = true
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
@@ -252,22 +253,26 @@ local function maybeYield()
 end
 
 local function buildTerrain()
-	local terrain = workspace.Terrain
+	-- Земля из ровных плит (рельеф Terrain перекрывал дороги).
 	local b = Meta.Bounds
-	local margin = 200
-	local step = 512
-	for x = b.MinX - margin, b.MaxX + margin, step do
-		for z = b.MinZ - margin, b.MaxZ + margin, step do
-			terrain:FillBlock(CFrame.new(x + step / 2, -6, z + step / 2), Vector3.new(step, 12, step), Enum.Material.Grass)
+	local margin = 300
+	local x0, x1 = b.MinX - margin, b.MaxX + margin
+	local z0, z1 = b.MinZ - margin, b.MaxZ + margin
+	local tile = 2000
+	local ground = Instance.new("Folder")
+	ground.Name = "Ground"
+	ground.Parent = City
+	for x = x0, x1, tile do
+		for z = z0, z1, tile do
+			local sx, sz = math.min(tile, x1 - x), math.min(tile, z1 - z)
+			part({ Parent = ground, Name = "Ground", Size = Vector3.new(sx, 2, sz), Position = Vector3.new(x + sx / 2, -1, z + sz / 2), Color = Color3.fromRGB(104, 158, 82), Material = Enum.Material.Grass })
 		end
 	end
 	for _, r in records("Parks") do
-		terrain:FillBlock(CFrame.new(tonumber(r[1]), -2, tonumber(r[2])), Vector3.new(tonumber(r[3]), 4, tonumber(r[4])), Enum.Material.LeafyGrass)
+		part({ Parent = ground, Name = "Park", Size = Vector3.new(tonumber(r[3]), 0.2, tonumber(r[4])), Position = Vector3.new(tonumber(r[1]), -0.05, tonumber(r[2])), Color = Color3.fromRGB(78, 145, 62), Material = Enum.Material.Grass })
 	end
 	for _, r in records("Water") do
-		local cf = CFrame.new(tonumber(r[1]), -4, tonumber(r[2]))
-		local size = Vector3.new(tonumber(r[3]), 8, tonumber(r[4]))
-		terrain:FillBlock(cf, size, Enum.Material.Water)
+		part({ Parent = ground, Name = "Water", Size = Vector3.new(tonumber(r[3]), 0.3, tonumber(r[4])), Position = Vector3.new(tonumber(r[1]), -0.05, tonumber(r[2])), Color = Color3.fromRGB(62, 120, 180), Material = Enum.Material.Glass, Transparency = 0.1, Reflectance = 0.15, CanCollide = false })
 	end
 	-- Невидимые стены по краю карты.
 	local cx, cz = (b.MinX + b.MaxX) / 2, (b.MinZ + b.MaxZ) / 2
@@ -285,42 +290,83 @@ local function buildTerrain()
 	end
 end
 
+local SIDEWALK = Color3.fromRGB(176, 174, 168)
+local NO_SIDEWALK = { service = true, pedestrian = true, rail = true }
+
 local function buildRoads()
 	local classes = Meta.RoadClasses
 	local folder = Instance.new("Folder")
 	folder.Name = "Roads"
 	folder.Parent = City
+	-- Проезжая часть: верх на высоте 0.3, тротуар под ней шире на 5 studs с каждой стороны.
+	local ROAD_TOP, WALK_TOP = 0.3, 0.2
 	for _, r in records("Roads") do
 		local x1, z1, x2, z2 = tonumber(r[1]), tonumber(r[2]), tonumber(r[3]), tonumber(r[4])
 		local w = tonumber(r[5])
 		local cls = classes[tonumber(r[6])]
 		local a, b = Vector3.new(x1, 0, z1), Vector3.new(x2, 0, z2)
 		local len = (b - a).Magnitude
-		local mid = (a + b) / 2
-		local color, mat, top = ASPHALT, Enum.Material.Asphalt, 0.1
+		local cf = CFrame.lookAt((a + b) / 2, b)
 		if cls == "rail" then
-			color, mat, top = Color3.fromRGB(105, 95, 85), Enum.Material.Slate, 0.3
-		elseif cls == "pedestrian" then
-			color, mat, top = Color3.fromRGB(185, 180, 170), Enum.Material.Concrete, 0.12
-		elseif cls == "service" then
-			top = 0.09
-		end
-		local cf = CFrame.lookAt(mid, b)
-		part({ Parent = folder, Name = cls, Size = Vector3.new(w, 1, len + 0.2), CFrame = cf + Vector3.new(0, top - 0.5, 0), Color = color, Material = mat })
-		if cls == "primary" or cls == "secondary" then
-			part({ Parent = folder, Name = "Line", Size = Vector3.new(0.5, 0.05, len), CFrame = cf + Vector3.new(0, top + 0.02, 0), Color = Color3.fromRGB(240, 240, 235), CanCollide = false })
-		elseif cls == "rail" then
+			part({ Parent = folder, Name = "RailBed", Size = Vector3.new(w, 0.6, len + 0.2), CFrame = cf + Vector3.new(0, 0.1, 0), Color = Color3.fromRGB(110, 98, 86), Material = Enum.Material.Slate })
 			for _, off in { -2.4, 2.4 } do
-				part({ Parent = folder, Name = "Rail", Size = Vector3.new(0.4, 0.4, len), CFrame = cf * CFrame.new(off, top + 0.2, 0), Color = Color3.fromRGB(90, 90, 95), Material = Enum.Material.Metal })
+				part({ Parent = folder, Name = "Rail", Size = Vector3.new(0.4, 0.4, len), CFrame = cf * CFrame.new(off, 0.6, 0), Color = Color3.fromRGB(90, 90, 95), Material = Enum.Material.Metal })
+			end
+		else
+			local color, mat = Color3.fromRGB(48, 48, 54), Enum.Material.Asphalt
+			if cls == "pedestrian" then
+				color, mat = SIDEWALK, Enum.Material.Concrete
+			elseif cls == "service" then
+				-- Дворовые проезды: светлее и уже основных улиц.
+				color, w = Color3.fromRGB(105, 105, 110), w - 2
+			end
+			part({ Parent = folder, Name = cls, Size = Vector3.new(w, 0.6, len + 0.2), CFrame = cf + Vector3.new(0, ROAD_TOP - 0.3, 0), Color = color, Material = mat })
+			if not NO_SIDEWALK[cls] then
+				part({ Parent = folder, Name = "Sidewalk", Size = Vector3.new(w + 10, 0.6, len + 0.2), CFrame = cf + Vector3.new(0, WALK_TOP - 0.3, 0), Color = SIDEWALK, Material = Enum.Material.Concrete })
+			end
+			if cls == "primary" or cls == "secondary" or cls == "tertiary" then
+				-- Осевая разметка: сплошная на главных, прерывистая на остальных.
+				if cls == "tertiary" then
+					local n = math.floor(len / 12)
+					for i = 0, n - 1 do
+						part({ Parent = folder, Name = "Dash", Size = Vector3.new(0.5, 0.05, 6), CFrame = cf * CFrame.new(0, ROAD_TOP + 0.02, -len / 2 + 6 + i * 12), Color = Color3.fromRGB(240, 240, 235), CanCollide = false })
+					end
+				else
+					part({ Parent = folder, Name = "Line", Size = Vector3.new(0.6, 0.05, len), CFrame = cf + Vector3.new(0, ROAD_TOP + 0.02, 0), Color = Color3.fromRGB(240, 240, 235), CanCollide = false })
+				end
 			end
 		end
 		maybeYield()
 	end
 	for _, r in records("Discs") do
 		local w = tonumber(r[3])
-		part({ Parent = folder, Name = "Joint", Shape = Enum.PartType.Cylinder, Size = Vector3.new(1, w, w), CFrame = CFrame.new(tonumber(r[1]), -0.41, tonumber(r[2])) * CFrame.Angles(0, 0, math.rad(90)), Color = ASPHALT, Material = Enum.Material.Asphalt })
+		local x, z = tonumber(r[1]), tonumber(r[2])
+		local jointColor = w <= 12 and Color3.fromRGB(105, 105, 110) or Color3.fromRGB(48, 48, 54)
+		local jw = w <= 12 and w - 2 or w
+		part({ Parent = folder, Name = "Joint", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.6, jw, jw), CFrame = CFrame.new(x, ROAD_TOP - 0.31, z) * CFrame.Angles(0, 0, math.rad(90)), Color = jointColor, Material = Enum.Material.Asphalt })
+		if w >= 18 then
+			part({ Parent = folder, Name = "SidewalkJoint", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.6, w + 10, w + 10), CFrame = CFrame.new(x, WALK_TOP - 0.31, z) * CFrame.Angles(0, 0, math.rad(90)), Color = SIDEWALK, Material = Enum.Material.Concrete })
+		end
 		maybeYield()
 	end
+end
+
+local ROOF_COLORS = {
+	Color3.fromRGB(140, 50, 40), Color3.fromRGB(95, 70, 55), Color3.fromRGB(60, 100, 70),
+	Color3.fromRGB(70, 85, 110), Color3.fromRGB(120, 120, 125),
+}
+local WINDOW = Color3.fromRGB(60, 85, 110)
+
+-- Двускатная крыша над прямоугольником sx × sz (конёк вдоль длинной стороны).
+local function gableRoof(parent, cf, sx, sz, height, color)
+	if sz > sx then
+		cf = cf * CFrame.Angles(0, math.rad(90), 0)
+		sx, sz = sz, sx
+	end
+	local half = sz / 2 + 0.8
+	-- У клина высокая грань сзади (+Z), скат спускается вперёд (−Z).
+	part({ Parent = parent, ClassName = "WedgePart", Name = "Roof", Size = Vector3.new(sx + 1.6, height, half), CFrame = cf * CFrame.new(0, height / 2, -half / 2), Color = color, Material = Enum.Material.Slate })
+	part({ Parent = parent, ClassName = "WedgePart", Name = "Roof", Size = Vector3.new(sx + 1.6, height, half), CFrame = cf * CFrame.new(0, height / 2, half / 2) * CFrame.Angles(0, math.rad(180), 0), Color = color, Material = Enum.Material.Slate })
 end
 
 local function buildRealBuildings()
@@ -331,16 +377,35 @@ local function buildRealBuildings()
 		local cx, cz, sx, sz = tonumber(r[1]), tonumber(r[2]), tonumber(r[3]), tonumber(r[4])
 		local yaw, h, ci = tonumber(r[5]), tonumber(r[6]), tonumber(r[7])
 		local color = BUILDING_COLORS[ci] or BUILDING_COLORS[1]
-		local mat = (ci >= 6 and ci <= 9) and Enum.Material.WoodPlanks or Enum.Material.Concrete
+		local base = CFrame.new(cx, 0, cz) * CFrame.Angles(0, math.rad(yaw), 0)
 		if ci == 10 then
-			mat = Enum.Material.CorrodedMetal
-		end
-		local cf = CFrame.new(cx, h / 2, cz) * CFrame.Angles(0, math.rad(yaw), 0)
-		part({ Parent = folder, Name = "Building", Size = Vector3.new(sx, h, sz), CFrame = cf, Color = color, Material = mat })
-		if h >= 12 then
-			-- Полосы окон на многоэтажках.
-			for y = 6, h - 4, 5 do
-				part({ Parent = folder, Name = "Windows", Size = Vector3.new(sx + 0.2, 1.6, sz + 0.2), CFrame = cf * CFrame.new(0, y - h / 2, 0), Color = Color3.fromRGB(70, 90, 110), Material = Enum.Material.Glass, CanCollide = false })
+			-- Промышленное здание: профлист, тёмная кровля, ленточное остекление.
+			part({ Parent = folder, Name = "Building", Size = Vector3.new(sx, h, sz), CFrame = base * CFrame.new(0, h / 2, 0), Color = color, Material = Enum.Material.CorrodedMetal })
+			part({ Parent = folder, Name = "Roof", Size = Vector3.new(sx + 0.4, 0.6, sz + 0.4), CFrame = base * CFrame.new(0, h + 0.3, 0), Color = Color3.fromRGB(85, 85, 90), Material = Enum.Material.Metal })
+			part({ Parent = folder, Name = "Windows", Size = Vector3.new(sx + 0.2, 2, sz + 0.2), CFrame = base * CFrame.new(0, h - 3, 0), Color = WINDOW, Material = Enum.Material.Glass, CanCollide = false })
+		elseif h <= 8 then
+			-- Частный дом: стены, двускатная крыша, окна и дверь.
+			local wallH = 7
+			part({ Parent = folder, Name = "House", Size = Vector3.new(sx, wallH, sz), CFrame = base * CFrame.new(0, wallH / 2, 0), Color = color, Material = Enum.Material.WoodPlanks })
+			gableRoof(folder, base * CFrame.new(0, wallH, 0), sx, sz, math.clamp(math.min(sx, sz) * 0.35, 3, 8), ROOF_COLORS[(math.floor(cx + cz) % #ROOF_COLORS) + 1])
+			if sx >= 8 and sz >= 8 then
+				local long, short = sx >= sz, nil
+				short = long and sz or sx
+				for _, side in { -1, 1 } do
+					local off = (short / 2 + 0.1) * side
+					local wcf = long and base * CFrame.new(sx * 0.22, 4, off) or base * CFrame.new(off, 4, sz * 0.22)
+					part({ Parent = folder, Name = "Window", Size = long and Vector3.new(3, 2.6, 0.3) or Vector3.new(0.3, 2.6, 3), CFrame = wcf, Color = WINDOW, Material = Enum.Material.Glass, CanCollide = false })
+				end
+				local dcf = long and base * CFrame.new(-sx * 0.25, 2.6, sz / 2 + 0.1) or base * CFrame.new(sx / 2 + 0.1, 2.6, -sz * 0.25)
+				part({ Parent = folder, Name = "Door", Size = long and Vector3.new(2.6, 5, 0.3) or Vector3.new(0.3, 5, 2.6), CFrame = dcf, Color = Color3.fromRGB(100, 65, 40), Material = Enum.Material.Wood, CanCollide = false })
+			end
+		else
+			-- Многоэтажка: цоколь, этажи с лентами окон, парапет на крыше.
+			part({ Parent = folder, Name = "Building", Size = Vector3.new(sx, h, sz), CFrame = base * CFrame.new(0, h / 2, 0), Color = color, Material = Enum.Material.Concrete })
+			part({ Parent = folder, Name = "Plinth", Size = Vector3.new(sx + 0.4, 1.8, sz + 0.4), CFrame = base * CFrame.new(0, 0.9, 0), Color = color:Lerp(Color3.new(0, 0, 0), 0.35), Material = Enum.Material.Concrete })
+			part({ Parent = folder, Name = "Parapet", Size = Vector3.new(sx + 0.6, 0.9, sz + 0.6), CFrame = base * CFrame.new(0, h + 0.2, 0), Color = color:Lerp(Color3.new(1, 1, 1), 0.3), Material = Enum.Material.Concrete })
+			for y = 4.5, h - 3, 5 do
+				part({ Parent = folder, Name = "Windows", Size = Vector3.new(sx + 0.2, 1.8, sz + 0.2), CFrame = base * CFrame.new(0, y, 0), Color = WINDOW, Material = Enum.Material.Glass, CanCollide = false })
 			end
 		end
 		maybeYield()
@@ -366,33 +431,126 @@ local HOUSE_COLORS = {
 	Color3.fromRGB(200, 230, 190), Color3.fromRGB(240, 230, 170), Color3.fromRGB(210, 190, 230),
 }
 
-local function buildHouse(id, a)
-	local w, d, h = 34, 34, 14
-	local m, at = building({
-		Name = "House" .. id, X = a.X, Z = a.Z, Yaw = a.Yaw, W = w, D = d, H = h, DoorW = 8,
-		Color = HOUSE_COLORS[(id - 1) % #HOUSE_COLORS + 1], Material = Enum.Material.Brick,
-		RoofColor = Color3.fromRGB(150, 60, 50), Path = 26, GPSName = "Дом №" .. id,
-	})
-	-- Удаляем общую точку GPS для каждого дома (иначе список слишком длинный).
-	table.remove(World.GPS)
+-- Коттедж игрока: участок 46×46 с газоном и забором, дом 30×22 с двускатной
+-- крышей, крыльцом, окнами, трубой; внутри спальня, душ, кухня, гостиная.
+local ROOF_PALETTE = { Color3.fromRGB(150, 55, 45), Color3.fromRGB(70, 90, 120), Color3.fromRGB(70, 110, 75), Color3.fromRGB(105, 75, 60) }
 
-	local door = part({ Parent = m, Name = "Door", Size = Vector3.new(8, 12, 0.6), Position = at(0, 6, d / 2 - 0.5), Color = Color3.fromRGB(110, 70, 40), Material = Enum.Material.Wood })
-	local bed = interactable(m, "Bed", at(-10, 1.4, -10), Vector3.new(6, 2, 9), Color3.fromRGB(240, 240, 255), "Кровать", Enum.Material.Fabric)
-	part({ Parent = m, Name = "Pillow", Size = Vector3.new(5, 0.8, 2), Position = at(-10, 2.7, -13.5), Color = Color3.new(1, 1, 1), Material = Enum.Material.Fabric })
-	local shower = interactable(m, "Shower", at(12, 4, -12), Vector3.new(6, 8, 6), Color3.fromRGB(160, 210, 240), "Душ", Enum.Material.Glass)
+local function buildHouse(id, a)
+	local m = Instance.new("Model")
+	m.Name = "House" .. id
+	m.Parent = City
+	local base = CFrame.new(a.X, 0, a.Z) * CFrame.Angles(0, math.rad(a.Yaw), 0)
+	local function at(lx, ly, lz)
+		return base * CFrame.new(lx, ly, lz)
+	end
+	local wall = HOUSE_COLORS[(id - 1) % #HOUSE_COLORS + 1]
+	local roofColor = ROOF_PALETTE[(id - 1) % #ROOF_PALETTE + 1]
+	local trim = Color3.fromRGB(250, 250, 245)
+	local wood = Color3.fromRGB(120, 80, 50)
+
+	-- Участок: газон, забор с калиткой, дорожка до улицы.
+	part({ Parent = m, Name = "Lawn", Size = Vector3.new(46, 0.3, 46), CFrame = at(0, 0.05, 0), Color = Color3.fromRGB(110, 175, 85), Material = Enum.Material.Grass })
+	local fenceH = 3.5
+	local function fence(lx, lz, sx, sz)
+		part({ Parent = m, Name = "Fence", Size = Vector3.new(sx, fenceH, sz), CFrame = at(lx, fenceH / 2, lz), Color = trim, Material = Enum.Material.WoodPlanks })
+	end
+	fence(0, -23, 46, 0.5)
+	fence(-23, 0, 0.5, 46)
+	fence(23, 0, 0.5, 46)
+	fence(-13.5, 23, 19, 0.5)
+	fence(13.5, 23, 19, 0.5)
+	for _, lx in { -4, 4 } do
+		part({ Parent = m, Name = "GatePost", Size = Vector3.new(1, 5, 1), CFrame = at(lx, 2.5, 23), Color = trim, Material = Enum.Material.Wood })
+	end
+	part({ Parent = m, Name = "Path", Size = Vector3.new(4, 0.35, 28), CFrame = at(0, 0.18, 19), Color = Color3.fromRGB(190, 180, 165), Material = Enum.Material.Cobblestone })
+
+	-- Дом: пол, стены с проёмами под дверь и окна.
+	local W, D, H = 30, 22, 11
+	local zc = -6 -- центр дома по глубине (участок спереди свободен под двор)
+	local zf, zb = zc + D / 2, zc - D / 2
+	part({ Parent = m, Name = "Foundation", Size = Vector3.new(W + 1, 1, D + 1), CFrame = at(0, 0.5, zc), Color = Color3.fromRGB(140, 135, 130), Material = Enum.Material.Concrete })
+	part({ Parent = m, Name = "Floor", Size = Vector3.new(W - 1, 0.2, D - 1), CFrame = at(0, 1.05, zc), Color = Color3.fromRGB(175, 135, 95), Material = Enum.Material.WoodPlanks })
+	local function wallPart(lx, ly, lz, sx, sy, sz)
+		part({ Parent = m, Name = "Wall", Size = Vector3.new(sx, sy, sz), CFrame = at(lx, ly, lz), Color = wall, Material = Enum.Material.Plaster })
+	end
+	local top = 1 + H
+	wallPart(0, 1 + H / 2, zb + 0.5, W, H, 1) -- задняя
+	wallPart(-W / 2 + 0.5, 1 + H / 2, zc, 1, H, D) -- левая
+	wallPart(W / 2 - 0.5, 1 + H / 2, zc, 1, H, D) -- правая
+	-- Фасад с дверью (ширина 5, высота 8).
+	wallPart(-(2.5 + (W / 2 - 2.5) / 2), 1 + H / 2, zf - 0.5, W / 2 - 2.5, H, 1)
+	wallPart(2.5 + (W / 2 - 2.5) / 2, 1 + H / 2, zf - 0.5, W / 2 - 2.5, H, 1)
+	wallPart(0, 1 + 8 + (H - 8) / 2, zf - 0.5, 5, H - 8, 1)
+	part({ Parent = m, Name = "Ceiling", Size = Vector3.new(W, 0.4, D), CFrame = at(0, top + 0.2, zc), Color = trim, Material = Enum.Material.SmoothPlastic })
+
+	-- Окна с белыми рамами (стекло чуть выступает из стены).
+	local function window(lx, lz, alongX)
+		local size = alongX and Vector3.new(5, 4, 0.3) or Vector3.new(0.3, 4, 5)
+		local frame = alongX and Vector3.new(5.8, 4.8, 0.2) or Vector3.new(0.2, 4.8, 5.8)
+		local out = alongX and Vector3.new(0, 0, lz > zc and 0.15 or -0.15) or Vector3.new(lx > 0 and 0.15 or -0.15, 0, 0)
+		part({ Parent = m, Name = "WindowFrame", Size = frame, CFrame = at(lx, 6, lz) + base:VectorToWorldSpace(out), Color = trim, CanCollide = false })
+		part({ Parent = m, Name = "Window", Size = size, CFrame = at(lx, 6, lz) + base:VectorToWorldSpace(out * 2), Color = Color3.fromRGB(150, 200, 235), Material = Enum.Material.Glass, Transparency = 0.35, CanCollide = false })
+	end
+	window(-9, zf, true)
+	window(-8, zb, true)
+	window(8, zb, true)
+	window(-W / 2, zc, false)
+	window(W / 2, zc, false)
+
+	-- Двускатная крыша и труба.
+	gableRoof(m, at(0, top + 0.4, zc), W + 2, D + 2, 7, roofColor)
+	part({ Parent = m, Name = "Chimney", Size = Vector3.new(2.2, 6, 2.2), CFrame = at(8, top + 5, zc - 5), Color = Color3.fromRGB(150, 80, 60), Material = Enum.Material.Brick })
+
+	-- Крыльцо с навесом.
+	part({ Parent = m, Name = "Porch", Size = Vector3.new(12, 1, 5), CFrame = at(0, 0.5, zf + 2.5), Color = wood, Material = Enum.Material.WoodPlanks })
+	part({ Parent = m, Name = "Step", Size = Vector3.new(6, 0.5, 2), CFrame = at(0, 0.25, zf + 6), Color = wood, Material = Enum.Material.WoodPlanks })
+	for _, lx in { -5.5, 5.5 } do
+		part({ Parent = m, Name = "PorchPost", Size = Vector3.new(0.8, 8.5, 0.8), CFrame = at(lx, 5.25, zf + 4.5), Color = trim, Material = Enum.Material.Wood })
+	end
+	part({ Parent = m, ClassName = "WedgePart", Name = "PorchRoof", Size = Vector3.new(13, 1.6, 5.5), CFrame = at(0, 10.3, zf + 2.6) * CFrame.Angles(0, math.rad(180), 0), Color = roofColor, Material = Enum.Material.Slate })
+	local lamp = part({ Parent = m, Name = "PorchLamp", Size = Vector3.new(0.8, 0.8, 0.8), CFrame = at(3.5, 8, zf + 0.3), Color = Color3.fromRGB(255, 235, 180), Material = Enum.Material.Neon, CanCollide = false })
+	local l = Instance.new("PointLight")
+	l.Range = 18
+	l.Color = Color3.fromRGB(255, 220, 160)
+	l.Parent = lamp
+
+	-- Двор: клумбы, дерево, скамейка.
+	for _, lx in { -14, 14 } do
+		part({ Parent = m, Name = "Flowerbed", Size = Vector3.new(8, 0.8, 3), CFrame = at(lx, 0.5, 14), Color = Color3.fromRGB(95, 65, 45), Material = Enum.Material.Ground })
+		for i = -1, 1 do
+			local colors = { Color3.fromRGB(240, 80, 120), Color3.fromRGB(255, 220, 60), Color3.fromRGB(180, 90, 230) }
+			part({ Parent = m, Shape = Enum.PartType.Ball, Name = "Flower", Size = Vector3.new(1.4, 1.4, 1.4), CFrame = at(lx + i * 2.5, 1.4, 14), Color = colors[i + 2], Material = Enum.Material.SmoothPlastic, CanCollide = false })
+		end
+	end
+	tree(at(-17, 0, -19).Position)
+	bench(at(15, 0, 18) * CFrame.Angles(0, math.rad(180), 0), 1)
+
+	-- Интерьер.
+	local door = part({ Parent = m, Name = "Door", Size = Vector3.new(5, 8, 0.5), CFrame = at(0, 5, zf - 0.5), Color = Color3.fromRGB(110, 70, 40), Material = Enum.Material.Wood })
+	part({ Parent = m, Name = "Rug", Size = Vector3.new(10, 0.1, 7), CFrame = at(4, 1.2, zc + 1), Color = Color3.fromRGB(170, 60, 70), Material = Enum.Material.Fabric, CanCollide = false })
+	local bed = interactable(m, "Bed", at(-9, 2.2, zb + 5.5), Vector3.new(6, 2, 9), Color3.fromRGB(240, 240, 255), "Кровать", Enum.Material.Fabric)
+	part({ Parent = m, Name = "Pillow", Size = Vector3.new(5, 0.8, 2), CFrame = at(-9, 3.5, zb + 2), Color = Color3.new(1, 1, 1), Material = Enum.Material.Fabric })
+	part({ Parent = m, Name = "Blanket", Size = Vector3.new(6.2, 0.3, 5), CFrame = at(-9, 3.3, zb + 7.5), Color = Color3.fromRGB(80, 120, 190), Material = Enum.Material.Fabric })
+	local shower = interactable(m, "Shower", at(11.5, 5, zb + 3.5), Vector3.new(5, 8, 5), Color3.fromRGB(160, 210, 240), "Душ", Enum.Material.Glass)
 	shower.Transparency = 0.4
 	shower.CanCollide = false
-	local tv = interactable(m, "TV", at(10, 4, 6), Vector3.new(7, 4, 0.6), Color3.fromRGB(20, 20, 20), "Телевизор")
-	part({ Parent = m, Name = "Sofa", Size = Vector3.new(8, 2, 3), Position = at(10, 1.4, -2), Color = Color3.fromRGB(90, 60, 120), Material = Enum.Material.Fabric })
-	local fridge = interactable(m, "Fridge", at(-14, 4, 8), Vector3.new(4, 8, 4), Color3.fromRGB(235, 235, 240), "Холодильник", Enum.Material.Metal)
+	local tv = interactable(m, "TV", at(9, 5, zf - 1.3), Vector3.new(7, 4, 0.5), Color3.fromRGB(20, 20, 20), "Телевизор")
+	part({ Parent = m, Name = "Sofa", Size = Vector3.new(8, 2, 3), CFrame = at(9, 2.1, zc + 0.5), Color = Color3.fromRGB(90, 60, 120), Material = Enum.Material.Fabric })
+	part({ Parent = m, Name = "SofaBack", Size = Vector3.new(8, 2.5, 0.8), CFrame = at(9, 3.4, zc - 1.1), Color = Color3.fromRGB(90, 60, 120), Material = Enum.Material.Fabric })
+	local fridge = interactable(m, "Fridge", at(-12.5, 5, zf - 3), Vector3.new(3.5, 8, 3.5), Color3.fromRGB(235, 235, 240), "Холодильник", Enum.Material.Metal)
+	part({ Parent = m, Name = "Kitchen", Size = Vector3.new(3.5, 3.5, 7), CFrame = at(-12.5, 2.8, zf - 9), Color = Color3.fromRGB(210, 200, 185), Material = Enum.Material.Wood })
+	part({ Parent = m, Shape = Enum.PartType.Cylinder, Name = "Table", Size = Vector3.new(3.4, 5, 5), CFrame = at(-4, 2.75, zf - 5) * CFrame.Angles(0, 0, math.rad(90)), Color = Color3.fromRGB(190, 150, 110), Material = Enum.Material.Wood })
+	local light = part({ Parent = m, Name = "Lamp", Size = Vector3.new(3, 0.4, 3), CFrame = at(0, top - 0.3, zc), Color = Color3.fromRGB(255, 250, 220), Material = Enum.Material.Neon, CanCollide = false })
+	local pl = Instance.new("PointLight")
+	pl.Range = 24
+	pl.Brightness = 1.2
+	pl.Parent = light
 
-	-- Табличка с владельцем перед домом.
-	local post = part({ Parent = m, Name = "SignPost", Size = Vector3.new(0.5, 4, 0.5), Position = at(8, 2, d / 2 + 6), Color = Color3.fromRGB(90, 60, 40) })
-	local board = part({ Parent = m, Name = "SignBoard", Size = Vector3.new(8, 3, 0.4), Position = at(8, 5, d / 2 + 6), Color = Color3.fromRGB(250, 250, 240), CanCollide = false })
+	-- Табличка с владельцем у калитки.
+	part({ Parent = m, Name = "SignPost", Size = Vector3.new(0.5, 4, 0.5), CFrame = at(7, 2, 25), Color = wood })
+	local board = part({ Parent = m, Name = "SignBoard", Size = Vector3.new(8, 3, 0.4), CFrame = at(7, 5, 25), Color = Color3.fromRGB(250, 250, 240), CanCollide = false })
 	local label = surfaceText(board, Enum.NormalId.Back, "", Color3.fromRGB(250, 250, 240), Color3.fromRGB(30, 30, 30))
-	post.CanCollide = true
-
-	local delivery = part({ Parent = m, Name = "Doorstep", Size = Vector3.new(6, 0.3, 4), Position = at(0, 0.3, d / 2 + 3), Color = Color3.fromRGB(150, 120, 90) })
+	local delivery = part({ Parent = m, Name = "Doorstep", Size = Vector3.new(4, 0.3, 3), CFrame = at(0, 0.5, 27), Color = Color3.fromRGB(150, 120, 90) })
 
 	local house = {
 		Id = id,
@@ -405,7 +563,7 @@ local function buildHouse(id, a)
 		SignLabel = label,
 		SignBoard = board,
 		Doorstep = delivery,
-		Spawn = (at(0, 4, 4)),
+		Spawn = at(0, 4, zc + 2),
 		Center = at(0, 0, 0).Position,
 	}
 	table.insert(World.Houses, house)

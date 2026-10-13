@@ -139,13 +139,14 @@ function H.makeEnv(gameObj, extra)
 	local cache = {}
 	local function req(mod)
 		local real = unwrap(mod)
-		if cache[real] ~= nil then return cache[real] end
+		local key = real:GetFullName()
+		if cache[key] ~= nil then return cache[key] end
 		local e = table.clone(env)
 		e.script = wrap(real)
 		e.require = env.require
 		local fn = luau.load(real.Source, { debugName = real:GetFullName(), environment = e })
 		local r = fn()
-		cache[real] = r
+		cache[key] = r
 		return r
 	end
 	env.require = req

@@ -75,8 +75,9 @@ def main():
         '<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" '
         'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
         'xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">',
-        # Отключаем стриминг, чтобы все здания и точки работы были видны клиенту.
-        item("Workspace", "Workspace", props='<bool name="StreamingEnabled">false</bool>'),
+        # Потоковая загрузка карты: клиент держит в памяти только ближайшие районы.
+        item("Workspace", "Workspace", props='<bool name="StreamingEnabled">true</bool>'
+             '<int name="StreamingTargetRadius">1024</int><int name="StreamingMinRadius">256</int>'),
         item("ReplicatedStorage", "ReplicatedStorage", body=shared),
         item("ServerScriptService", "ServerScriptService", body=server),
         item("StarterPlayer", "StarterPlayer", body=item("StarterPlayerScripts", "StarterPlayerScripts", body=client)),

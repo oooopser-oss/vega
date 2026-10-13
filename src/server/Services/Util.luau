@@ -38,11 +38,17 @@ function Util.Distance(a, b)
 	return (pa - pb).Magnitude
 end
 
+-- Телепорт с подгрузкой области (StreamingEnabled), чтобы не провалиться сквозь землю.
 function Util.Teleport(player, cf)
-	local char = player.Character
-	if char then
-		char:PivotTo(cf)
-	end
+	task.spawn(function()
+		pcall(function()
+			player:RequestStreamAroundAsync(cf.Position, 5)
+		end)
+		local char = player.Character
+		if char then
+			char:PivotTo(cf)
+		end
+	end)
 end
 
 function Util.Stars(n)

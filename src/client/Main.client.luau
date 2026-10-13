@@ -563,7 +563,7 @@ renderers["Работа"] = function(c)
 			send("QuitJob")
 		end, { LayoutOrder = 50, Size = UDim2.new(1, -8, 0, 34), Parent = c })
 	end
-	Ui.label({ LayoutOrder = 60, TextSize = 13, TextColor3 = T.Sub, Size = UDim2.new(1, -8, 0, 60), Text = "После устройства на экране появится жёлтая метка — идите к ней и нажмите E. За каждое задание вы получаете деньги. Работа тратит энергию — не забывайте есть и спать.", Parent = c })
+	Ui.label({ LayoutOrder = 60, TextSize = 13, TextColor3 = T.Sub, Size = UDim2.new(1, -8, 0, 76), Text = "После устройства появится жёлтая метка — идите к ней и удерживайте E. Между заданиями есть пауза, после " .. Config.Work.ShiftTasks .. " заданий — перерыв " .. math.floor(Config.Work.ShiftRest / 60) .. " мин. В сутки по полной ставке можно заработать " .. Config.Work.DailyCap .. "$, дальше оплата 25%. Работа тратит энергию.", Parent = c })
 end
 
 local function personActions(c, order, userId, name, online)
@@ -729,12 +729,25 @@ renderers["Дом"] = function(c)
 end
 
 renderers["GPS"] = function(c)
-	section(c, 1, "Куда пойти? Выберите место — появится метка и линия.")
+	section(c, 1, "Куда поехать? Метка с линией маршрута или такси 🚕")
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if (player:GetAttribute("HouseId") or 0) > 0 then
+		Ui.button("🏠 Такси домой", Color3.fromRGB(230, 180, 30), function()
+			send("Taxi", { Home = true })
+			closeModal()
+		end, { LayoutOrder = 1, Size = UDim2.new(1, -8, 0, 34), TextColor3 = Color3.new(0, 0, 0), Parent = c })
+	end
 	for i, place in state.GPS do
+		local r = new("Frame", { LayoutOrder = 1 + i, BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 32), Parent = c })
 		Ui.button(place.Name, T.Bg3, function()
 			setMarker("gps", place.Position, "📍 " .. place.Name, Color3.fromRGB(80, 220, 255))
 			closeModal()
-		end, { LayoutOrder = 1 + i, Size = UDim2.new(1, -8, 0, 32), Parent = c })
+		end, { Size = UDim2.new(1, -96, 1, 0), Parent = r })
+		local price = hrp and Config.TaxiPrice((hrp.Position - place.Position).Magnitude) or Config.Taxi.Base
+		Ui.button("🚕 " .. price .. "$", Color3.fromRGB(230, 180, 30), function()
+			send("Taxi", { Name = place.Name })
+			closeModal()
+		end, { Position = UDim2.new(1, -90, 0, 0), Size = UDim2.new(0, 90, 1, 0), TextColor3 = Color3.new(0, 0, 0), Parent = r })
 	end
 	Ui.button("Убрать метку", T.Bad, function()
 		clearMarker("gps")
@@ -879,6 +892,12 @@ local function setTask(p)
 		jobPrompt = nil
 	end
 	clearMarker("job")
+	state.Wait = nil
+	if p.Waiting then
+		state.Task = nil
+		state.Wait = { Until = os.clock() + p.Waiting, Reason = p.Reason or "Ожидайте" }
+		return
+	end
 	if not p.Id then
 		state.Task = nil
 		return
@@ -1039,6 +1058,12 @@ RunService.RenderStepped:Connect(function(dt)
 		table.insert(lines, "⛓ Тюрьма: осталось " .. jailed .. " сек.")
 	elseif wanted > 0 then
 		table.insert(lines, "🚨 Розыск: " .. string.rep("★", wanted) .. string.rep("☆", 5 - wanted))
+	end
+	if state.Wait then
+		local left = math.ceil(state.Wait.Until - os.clock())
+		if left > 0 then
+			table.insert(lines, "⏳ " .. state.Wait.Reason .. ": " .. (left >= 60 and (math.floor(left / 60) .. " мин " .. (left % 60) .. " сек") or (left .. " сек")))
+		end
 	end
 	if state.Task and state.Task.Target and myPos then
 		local d = (state.Task.Target.Position - myPos).Magnitude

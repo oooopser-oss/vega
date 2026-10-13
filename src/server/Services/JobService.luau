@@ -10,7 +10,11 @@ local JobService = {}
 local ctx
 
 local tasks = {} -- [Player] = { Id, Job, Stage, Target, Label, Hold, Issued }
+local waiting = {} -- [Player] = { Token, Until } — пауза между заданиями
+local shiftCount = {} -- [Player] = заданий в текущей смене
+local nextAllowed = {} -- [Player] = os.clock(), раньше которого новое задание не выдаётся
 local nextId = 0
+local W = Config.Work
 
 local function points(jobId)
 	local job = Config.Jobs[jobId]
@@ -72,6 +76,11 @@ end
 
 local function sendTask(player)
 	local t = tasks[player]
+	local w = waiting[player]
+	if not t and w then
+		ctx.Net.Send(player, "JobTask", { Waiting = math.max(0, w.Until - os.clock()), Reason = w.Reason })
+		return
+	end
 	if not t then
 		ctx.Net.Send(player, "JobTask", {})
 		return
@@ -108,9 +117,30 @@ local function issue(player, stage, avoid)
 	sendTask(player)
 end
 
+-- Выдаёт следующее задание после паузы (новый покупатель, отдых после смены).
+local function issueLater(player, delay, reason, avoid)
+	if delay <= 0 then
+		issue(player, "pickup", avoid)
+		return
+	end
+	tasks[player] = nil
+	local token = {}
+	waiting[player] = { Token = token, Until = os.clock() + delay, Reason = reason }
+	sendTask(player)
+	local jobId = player:GetAttribute("Job")
+	task.delay(delay, function()
+		local w = waiting[player]
+		if w and w.Token == token and player.Parent and player:GetAttribute("Job") == jobId then
+			waiting[player] = nil
+			issue(player, "pickup", avoid)
+		end
+	end)
+end
+
 function JobService.Quit(player, silent)
-	if tasks[player] or (player:GetAttribute("Job") or "") ~= "" then
+	if tasks[player] or waiting[player] or (player:GetAttribute("Job") or "") ~= "" then
 		tasks[player] = nil
+		waiting[player] = nil
 		player:SetAttribute("Job", "")
 		JobService.DropCarry(player)
 		sendTask(player)
@@ -135,9 +165,18 @@ function JobService.Select(player, jobId)
 		return
 	end
 	JobService.DropCarry(player)
+	waiting[player] = nil
 	player:SetAttribute("Job", jobId)
 	ctx.Net.Notify(player, "Вы устроились: " .. job.Name .. ". Следуйте к отмеченной точке!", "good")
-	issue(player, "pickup")
+	-- Смена работы или перезаход не сбрасывают паузу и отдых между сменами.
+	local data = ctx.Data.Get(player)
+	local rest = data and data.WorkToday and (data.WorkToday.RestUntil or 0) - os.time() or 0
+	local cooldown = (nextAllowed[player] or 0) - os.clock()
+	if rest > 0 then
+		issueLater(player, rest, "Перерыв между сменами")
+	else
+		issueLater(player, math.max(0, cooldown), job.WaitText or "Ожидайте")
+	end
 end
 
 local function complete(player, t)
@@ -162,6 +201,16 @@ local function complete(player, t)
 		pay = math.floor(pay * 0.9)
 		mood ..= " (неопрятный вид −10%)"
 	end
+	-- Дневной лимит: после него платят меньше.
+	local day = math.floor(os.time() / 86400)
+	if not data.WorkToday or data.WorkToday.Day ~= day then
+		data.WorkToday = { Day = day, Earned = 0 }
+	end
+	if data.WorkToday.Earned >= W.DailyCap then
+		pay = math.max(1, math.floor(pay * W.OverCapMultiplier))
+		mood ..= " (дневной лимит " .. W.DailyCap .. "$ достигнут — оплата 25%)"
+	end
+	data.WorkToday.Earned += pay
 	ctx.Data.AddCash(player, pay)
 	data.Stats.TasksDone += 1
 	ctx.Needs.Change(player, "Energy", -Config.WorkEnergyCost)
@@ -169,7 +218,16 @@ local function complete(player, t)
 	ctx.Net.Send(player, "Earned", { Amount = pay, Text = job.Name .. mood })
 	ctx.Quests.Progress(player, "work", 1)
 	ctx.Quests.Progress(player, "earn", pay)
-	issue(player, "pickup", t.Target)
+	shiftCount[player] = (shiftCount[player] or 0) + 1
+	if shiftCount[player] >= W.ShiftTasks then
+		shiftCount[player] = 0
+		data.WorkToday.RestUntil = os.time() + W.ShiftRest
+		ctx.Net.Notify(player, "Смена окончена! Отдохните " .. math.floor(W.ShiftRest / 60) .. " мин. — потом можно работать дальше.", "info")
+		issueLater(player, W.ShiftRest, "Перерыв между сменами", t.Target)
+	else
+		nextAllowed[player] = os.clock() + (job.Cooldown or 0)
+		issueLater(player, job.Cooldown or 0, job.WaitText or "Ожидайте", t.Target)
+	end
 end
 
 function JobService.Init(c)
@@ -205,6 +263,9 @@ function JobService.Init(c)
 	end)
 	Players.PlayerRemoving:Connect(function(player)
 		tasks[player] = nil
+		waiting[player] = nil
+		shiftCount[player] = nil
+		nextAllowed[player] = nil
 	end)
 end
 

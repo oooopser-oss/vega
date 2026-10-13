@@ -67,15 +67,25 @@ Config.RoleChangeCooldown = 60
 -- Работы. type:
 --   "station"  — подойти к рабочему месту и выполнить действие;
 --   "delivery" — забрать груз в точке A и отнести в точку B.
+-- Duration — сколько секунд удерживать E; Cooldown — пауза до следующего
+-- задания (например, ждать нового покупателя). Так деньги нельзя «накликать».
 Config.Jobs = {
-	cashier = { Name = "Кассир", Place = "Supermarket", Type = "station", Pay = 25, Action = "Обслужить покупателя", Duration = 2 },
-	cook = { Name = "Повар", Place = "Cafe", Type = "delivery", Pay = 35, Pickup = "Приготовить блюдо", Drop = "Отдать заказ", Duration = 2.5 },
-	office = { Name = "Офисный работник", Place = "Office", Type = "station", Pay = 40, Action = "Составить отчёт", Duration = 4 },
-	loader = { Name = "Грузчик", Place = "Factory", Type = "delivery", Pay = 35, Pickup = "Взять ящик", Drop = "Погрузить ящик", Duration = 1.5 },
-	courier = { Name = "Курьер", Place = "Factory", Type = "courier", Pay = 70, Pickup = "Забрать посылку", Drop = "Доставить посылку", Duration = 1.5 },
-	patrol = { Name = "Патрульный", Place = "Patrol", Type = "station", Pay = 45, Action = "Отметиться на посту", Duration = 1.5 },
-	special = { Name = "Оперативник", Place = "Patrol", Type = "station", Pay = 60, Action = "Проверить периметр", Duration = 1.5 },
-	doctor = { Name = "Врач", Place = "Hospital", Type = "station", Pay = 45, Action = "Осмотреть пациента", Duration = 3 },
+	cashier = { Name = "Кассир", Place = "Supermarket", Type = "station", Pay = 20, Action = "Обслужить покупателя", Duration = 4, Cooldown = 12, WaitText = "Ждём следующего покупателя" },
+	cook = { Name = "Повар", Place = "Cafe", Type = "delivery", Pay = 35, Pickup = "Приготовить блюдо", Drop = "Отдать заказ", Duration = 5, Cooldown = 8, WaitText = "Ждём новый заказ" },
+	office = { Name = "Офисный работник", Place = "Office", Type = "station", Pay = 40, Action = "Составить отчёт", Duration = 8, Cooldown = 15, WaitText = "Ждём новую задачу от начальника" },
+	loader = { Name = "Грузчик", Place = "Factory", Type = "delivery", Pay = 35, Pickup = "Взять ящик", Drop = "Погрузить ящик", Duration = 2, Cooldown = 5, WaitText = "Ждём следующую партию" },
+	courier = { Name = "Курьер", Place = "Factory", Type = "courier", Pay = 70, Pickup = "Забрать посылку", Drop = "Доставить посылку", Duration = 2, Cooldown = 5, WaitText = "Посылку упаковывают" },
+	patrol = { Name = "Патрульный", Place = "Patrol", Type = "station", Pay = 45, Action = "Отметиться на посту", Duration = 2, Cooldown = 20, WaitText = "Патрулируйте район" },
+	special = { Name = "Оперативник", Place = "Patrol", Type = "station", Pay = 60, Action = "Проверить периметр", Duration = 2, Cooldown = 20, WaitText = "Ожидайте вызова" },
+	doctor = { Name = "Врач", Place = "Hospital", Type = "station", Pay = 45, Action = "Осмотреть пациента", Duration = 6, Cooldown = 12, WaitText = "Ждём следующего пациента" },
+}
+
+-- Ограничения заработка на работе.
+Config.Work = {
+	ShiftTasks = 15, -- заданий за смену
+	ShiftRest = 240, -- секунд отдыха после смены
+	DailyCap = 5000, -- $ в сутки по полной ставке
+	OverCapMultiplier = 0.25, -- после лимита платят 25%
 }
 
 -- Потребности (0..100). Decay — сколько теряется за минуту.
@@ -117,6 +127,12 @@ Config.Cars = {
 	police = { Name = "Патрульная машина", Price = 0, Speed = 85, Color = Color3.fromRGB(240, 240, 255), Police = true, Hidden = true },
 }
 Config.CarOrder = { "sedan", "suv", "sport", "limo" }
+
+-- Такси: мгновенная поездка к месту из GPS.
+Config.Taxi = { Base = 20, PerStud = 0.03, Max = 150 }
+function Config.TaxiPrice(distance)
+	return math.min(Config.Taxi.Max, math.floor(Config.Taxi.Base + distance * Config.Taxi.PerStud))
+end
 
 Config.HousePrice = 7500
 Config.HouseSellRefund = 0.5

@@ -248,22 +248,55 @@ anchors["Park"] = {"X": round(best[1].x, 1), "Z": round(best[1].y, 1), "Yaw": 0}
 reserved.append(best[1].buffer(88))
 print("anchor Park", anchors["Park"])
 
-# Дома игроков — в частном секторе на юге города.
+# Дома игроков — коттеджи на свободных участках рядом с центром
+# (администрация, банк, кафе), чтобы до работы и магазинов было близко.
+# Сносить можно только мелкие постройки (гаражи, сараи), не жилые дома.
+HOUSE_W, HOUSE_D, HOUSE_FRONT = 46, 46, 10
+center_x = (anchors["CityHall"]["X"] + anchors["Bank"]["X"] + anchors["Cafe"]["X"]) / 3
+center_z = (anchors["CityHall"]["Z"] + anchors["Bank"]["Z"] + anchors["Cafe"]["Z"]) / 3
+print("house center", round(center_x), round(center_z))
+major_prep = shapely.prepared.prep(major_buf)
+water_prep = shapely.prepared.prep(water) if not water.is_empty else None
+cands = []
+R, STEP = 900, 10
+for dx in range(-R, R + 1, STEP):
+    for dz in range(-R, R + 1, STEP):
+        dist = math.hypot(dx, dz)
+        if dist > R:
+            continue
+        x, z = center_x + dx, center_z + dz
+        for yd in (0, 90, 180, 270):
+            yaw = math.radians(yd)
+            poly = rect_poly(x, z, yaw, HOUSE_W, HOUSE_D, HOUSE_FRONT, 0, 0)
+            if not BOUNDS.contains(poly) or major_prep.intersects(poly):
+                continue
+            if water_prep and water_prep.intersects(poly):
+                continue
+            hits = [buildings[i]["poly"] for i in btree.query(poly)]
+            hits = [h for h in hits if h.intersects(poly)]
+            if any(h.area > 300 for h in hits):
+                continue
+            fx = x + math.sin(yaw) * (HOUSE_D / 2 + HOUSE_FRONT + 4)
+            fz = z + math.cos(yaw) * (HOUSE_D / 2 + HOUSE_FRONT + 4)
+            rd = road_dist(Point(fx, fz))
+            if rd > 10:
+                continue
+            removed_here = sum(h.intersection(poly).area for h in hits)
+            cands.append((dist + removed_here * 0.3 + rd * 2, x, z, yd, poly))
+cands.sort(key=lambda c: c[0])
+print("house candidates", len(cands))
 houses = []
-small = [b for b in buildings if b["poly"].area < 260 * K * K and b["poly"].centroid.y > 1180 * K and abs(b["poly"].centroid.x) < 700 * K]
-small.sort(key=lambda b: math.hypot(b["poly"].centroid.x - 0, b["poly"].centroid.y - 1250 * K))
-for b in small:
+for cost, x, z, yd, poly in cands:
     if len(houses) >= 12:
         break
-    c = b["poly"].centroid
-    if any(math.hypot(c.x - h["X"], c.y - h["Z"]) < 70 for h in houses):
+    if any(poly.intersects(rp) for rp in reserved):
         continue
-    try:
-        spot = find_spot((c.x, c.y), 34, 34, 18, 0, 3, radius=50, step=6)
-    except RuntimeError:
+    if any(math.hypot(x - h["X"], z - h["Z"]) < 60 for h in houses):
         continue
-    houses.append(spot)
-print("houses", len(houses))
+    reserved.append(poly.buffer(3))
+    houses.append({"X": round(x, 1), "Z": round(z, 1), "Yaw": yd})
+for h in houses:
+    print("house", h, "до центра", round(math.hypot(h["X"] - center_x, h["Z"] - center_z)))
 assert len(houses) == 12, "не хватило мест под дома"
 
 reserved_union = unary_union(reserved)
@@ -510,7 +543,7 @@ if not water.is_empty:
     biggest = max(getattr(water, "geoms", [water]), key=lambda g: g.area)
     p = biggest.representative_point()
     landmarks.append(("Нижнешайтанский пруд", p.x, p.y))
-landmarks.append(("Частный сектор (дома игроков)", houses[0]["X"], houses[0]["Z"]))
+landmarks.append(("Коттеджи (дома игроков)", houses[0]["X"], houses[0]["Z"]))
 landmarks.append(("Улица Ватутина", *place("ул. Ватутина")))
 
 

@@ -123,6 +123,48 @@ function EconomyService.Init(c)
 		Data.SyncMoney(player)
 	end)
 
+	local taxiBusy = {}
+	Net.On("Taxi", function(player, p)
+		if taxiBusy[player] or not Util.Alive(player) then
+			return
+		end
+		local target
+		for _, place in World.GPS do
+			if place.Name == p.Name then
+				target = place.Position
+			end
+		end
+		if p.Home then
+			local home = ctx.Housing.SpawnFor(player)
+			target = home and home.Position
+		end
+		if not target then
+			return
+		end
+		if (player:GetAttribute("Jailed") or 0) > 0 or (player:GetAttribute("Wanted") or 0) > 0 then
+			Net.Notify(player, "Таксисты не берут разыскиваемых пассажиров!", "bad")
+			return
+		end
+		local pos = Util.Position(player)
+		local price = Config.TaxiPrice((pos - target).Magnitude)
+		if not Data.Spend(player, price) then
+			Net.Notify(player, "Недостаточно денег на такси (" .. price .. "$).", "bad")
+			return
+		end
+		taxiBusy[player] = true
+		ctx.Needs.StopActivity(player)
+		Net.Notify(player, "🚕 Такси подъехало. Поездка: " .. price .. "$", "info")
+		task.delay(2, function()
+			taxiBusy[player] = nil
+			local hum = Util.Humanoid(player)
+			if hum and hum.Health > 0 and (player:GetAttribute("Jailed") or 0) == 0 then
+				hum.Sit = false
+				Util.Teleport(player, CFrame.new(target + Vector3.new(math.random(-4, 4), 3, math.random(-4, 4))))
+				Net.Notify(player, "Приехали! Хорошего дня.", "good")
+			end
+		end)
+	end)
+
 	Net.On("GetState", function(player)
 		EconomyService.SendInventory(player)
 		ctx.Vehicles.SendCars(player)
