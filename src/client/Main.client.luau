@@ -14,6 +14,7 @@ local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Co
 local Ui = require(script.Parent:WaitForChild("Ui"))
 local CarController = require(script.Parent:WaitForChild("CarController"))
 local Ambient = require(script.Parent:WaitForChild("Ambient"))
+local Weather = require(script.Parent:WaitForChild("Weather"))
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local ActionRemote = Remotes:WaitForChild("Action")
@@ -132,7 +133,7 @@ end
 local hud = Ui.panel({
 	AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.new(0, 12, 1, -12),
-	Size = UDim2.fromOffset(280, 258),
+	Size = UDim2.fromOffset(300, 282),
 	Parent = gui,
 })
 scaleIt(hud)
@@ -143,6 +144,7 @@ local cashLabel = Ui.label({ LayoutOrder = 1, Font = Enum.Font.GothamBold, TextS
 local bankLabel = Ui.label({ LayoutOrder = 2, TextSize = 15, Text = "💳 Карта: 0$", TextColor3 = T.Sub, Parent = hud })
 local roleLabel = Ui.label({ LayoutOrder = 3, TextSize = 15, Font = Enum.Font.GothamBold, Text = "", Parent = hud })
 local clockLabel = Ui.label({ LayoutOrder = 4, TextSize = 14, Text = "", TextColor3 = T.Sub, Parent = hud })
+local weatherLabel = Ui.label({ LayoutOrder = 4, TextSize = 13, Text = "", TextColor3 = Color3.fromRGB(170, 210, 255), Parent = hud })
 local questLabel = Ui.label({ LayoutOrder = 5, TextSize = 14, Text = "", TextColor3 = Color3.fromRGB(255, 215, 110), Parent = hud })
 
 local needBars = {}
@@ -407,6 +409,9 @@ local function openShop(shopId)
 		if item.Gift then
 			desc = (desc ~= "" and (desc .. " • ") or "") .. "подарок"
 		end
+		if item.Passive then
+			desc = item.Passive
+		end
 		Ui.label({ Text = desc, TextSize = 13, TextColor3 = T.Sub, Position = UDim2.fromOffset(10, 28), Size = UDim2.new(1, -170, 0, 20), Parent = r })
 		Ui.button("Купить", T.Good, function()
 			send("BuyItem", { Shop = shopId, Item = itemId, Count = 1 })
@@ -665,7 +670,7 @@ renderers["Вещи"] = function(c)
 		order += 1
 		local r = row(c, order, 52)
 		Ui.label({ Text = item.Name .. " ×" .. state.Inventory[itemId], Font = Enum.Font.GothamBold, Position = UDim2.fromOffset(10, 5), Size = UDim2.new(1, -130, 0, 22), Parent = r })
-		Ui.label({ Text = item.Effects and effectsText(item.Effects) or "Подарок — дарите в разделе «Люди»", TextSize = 13, TextColor3 = T.Sub, Position = UDim2.fromOffset(10, 27), Size = UDim2.new(1, -130, 0, 20), Parent = r })
+		Ui.label({ Text = item.Effects and effectsText(item.Effects) or item.Passive or "Подарок — дарите в разделе «Люди»", TextSize = 13, TextColor3 = T.Sub, Position = UDim2.fromOffset(10, 27), Size = UDim2.new(1, -130, 0, 20), Parent = r })
 		if item.Effects then
 			Ui.button("Использовать", T.Good, function()
 				send("UseItem", { Item = itemId })
@@ -1031,6 +1036,13 @@ RunService.RenderStepped:Connect(function(dt)
 	local m = math.floor((t - h) * 60)
 	local period = (h >= 6 and h < 12) and "утро" or (h >= 12 and h < 18) and "день" or (h >= 18 and h < 23) and "вечер" or "ночь"
 	clockLabel.Text = string.format("🕒 %02d:%02d (%s)", h, m, period)
+	local wtext = Weather.Describe()
+	if player:GetAttribute("Wet") then
+		wtext ..= " • 💧 вы промокли"
+	elseif player:GetAttribute("Cold") then
+		wtext ..= " • 🥶 холодно"
+	end
+	weatherLabel.Text = wtext
 
 	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local myPos = hrp and hrp.Position
@@ -1085,6 +1097,7 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 
 CarController.Start()
+Weather.Start()
 Ambient.Start(function()
 	send("TalkNPC")
 end)

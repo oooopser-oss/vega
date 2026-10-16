@@ -110,11 +110,12 @@ Config.Items = {
 	soap = { Name = "Мыло", Price = 25, Effects = { Hygiene = 40 } },
 	flowers = { Name = "Букет цветов", Price = 50, Gift = true },
 	chocolate = { Name = "Конфеты", Price = 40, Gift = true, Effects = { Hunger = 10, Fun = 10 } },
+	umbrella = { Name = "Зонт", Price = 120, Passive = "Защищает от дождя и снега на улице" },
 	ring = { Name = "Обручальное кольцо", Price = 1500, Gift = true },
 }
 
 Config.Shops = {
-	Supermarket = { Name = "Супермаркет", Items = { "bread", "salad", "water", "coffee", "soap", "chocolate", "pizza" } },
+	Supermarket = { Name = "Супермаркет", Items = { "bread", "salad", "water", "coffee", "soap", "chocolate", "pizza", "umbrella" } },
 	Cafe = { Name = "Пельменная", Items = { "burger", "pizza", "coffee", "cake", "water" } },
 	Florist = { Name = "Цветы и подарки", Items = { "flowers", "chocolate", "ring" } },
 }
@@ -223,5 +224,53 @@ Config.Monetization = {
 	PremiumPayBonus = 0.1, -- +10% к зарплате для подписчиков Roblox Premium
 }
 Config.DayLengthMinutes = 16 -- длина игровых суток в реальных минутах
+
+-- Погода. Меняется каждые MinDuration..MaxDuration секунд, вероятности
+-- зависят от сезона (по текущему месяцу). Temp — температура при ясном дне
+-- летом; к ней добавляется поправка сезона и ночи.
+Config.Weather = {
+	MinDuration = 240,
+	MaxDuration = 480,
+	Types = {
+		Clear = { Name = "Ясно", Icon = "☀", Temp = 22, Cloud = 0.3, Density = 0.28, Haze = 1.2, Brightness = 3, Saturation = 0.12,
+			Message = "Распогодилось! Отличное время для прогулки." },
+		Cloudy = { Name = "Облачно", Icon = "☁", Temp = 18, Cloud = 0.8, Density = 0.34, Haze = 2, Brightness = 2.3, Saturation = 0.02,
+			Message = "Небо затянуло облаками." },
+		Rain = { Name = "Дождь", Icon = "🌧", Temp = 15, Cloud = 0.95, Density = 0.42, Haze = 2.6, Brightness = 1.6, Saturation = -0.1, Precip = "rain",
+			Message = "Начался дождь. Зонт или крыша спасут настроение." },
+		Storm = { Name = "Гроза", Icon = "⛈", Temp = 17, Cloud = 1, Density = 0.5, Haze = 3.2, Brightness = 1.1, Saturation = -0.2, Precip = "rain", Heavy = true, Lightning = true,
+			Message = "Гроза! Лучше переждать в помещении." },
+		Fog = { Name = "Туман", Icon = "🌫", Temp = 12, Cloud = 0.7, Density = 0.75, Haze = 7, Brightness = 1.8, Saturation = -0.08,
+			Message = "Город окутал туман. Водите осторожно." },
+		Snow = { Name = "Снег", Icon = "❄", Temp = 0, Cloud = 0.9, Density = 0.45, Haze = 3, Brightness = 2.3, Saturation = -0.05, Precip = "snow", Cold = true,
+			Message = "Пошёл снег! На улице холодно — одевайтесь теплее." },
+	},
+	Seasons = {
+		summer = { Name = "лето", TempOffset = 0, Weights = { Clear = 5, Cloudy = 3, Rain = 2, Storm = 1, Fog = 1 } },
+		autumn = { Name = "осень", TempOffset = -10, Weights = { Clear = 2, Cloudy = 4, Rain = 3, Storm = 0.5, Fog = 2, Snow = 0.7 } },
+		winter = { Name = "зима", TempOffset = -26, Weights = { Clear = 3, Cloudy = 3, Fog = 1, Snow = 4 } },
+		spring = { Name = "весна", TempOffset = -9, Weights = { Clear = 3, Cloudy = 3, Rain = 2, Fog = 1, Snow = 0.5 } },
+	},
+	NightTempOffset = -5,
+	-- Влияние на игроков без крыши над головой и без зонта (за 3 секунды).
+	WetFunLoss = 0.25,
+	ColdEnergyLoss = 0.2,
+	-- Скорость городских машин и доля прохожих в плохую погоду.
+	TrafficSpeed = { Rain = 0.85, Storm = 0.7, Fog = 0.6, Snow = 0.65 },
+	PedestrianShare = { Rain = 0.4, Storm = 0.2, Snow = 0.6, Fog = 0.8 },
+	-- Звуки (по желанию): ID звуков из Creator Store, например "rbxassetid://...".
+	Sounds = { Rain = "", Thunder = "" },
+}
+
+function Config.Season(month)
+	if month == 12 or month <= 2 then
+		return "winter"
+	elseif month <= 5 then
+		return "spring"
+	elseif month <= 8 then
+		return "summer"
+	end
+	return "autumn"
+end
 
 return Config

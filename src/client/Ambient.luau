@@ -9,6 +9,7 @@ local TextChatService = game:GetService("TextChatService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared:WaitForChild("Config"))
 local Roads = require(Shared:WaitForChild("Roads"))
 local Rig = require(Shared:WaitForChild("Rig"))
 local TrafficCar = require(Shared:WaitForChild("TrafficCar"))
@@ -124,8 +125,14 @@ local function spawnCar(pos)
 	table.insert(cars, c)
 end
 
+local function weatherKey()
+	return workspace:GetAttribute("Weather") or "Clear"
+end
+
 local function carTargetSpeed(c, myPos, myHrp)
-	local maxSpeed = (Roads.Speed[c.Class] or 30) * c.Car.Speed
+	-- В дождь, туман и снег машины едут осторожнее.
+	local slow = Config.Weather.TrafficSpeed[weatherKey()] or 1
+	local maxSpeed = (Roads.Speed[c.Class] or 30) * c.Car.Speed * slow
 	local remaining = c.Len - c.T
 	local target = maxSpeed
 	-- Светофор.
@@ -373,7 +380,8 @@ function Ambient.Start(talkCallback)
 			if #cars < MAX_CARS then
 				spawnCar(myPos)
 			end
-			if #peds < MAX_PEDS then
+			-- В непогоду прохожих меньше.
+			if #peds < math.floor(MAX_PEDS * (Config.Weather.PedestrianShare[weatherKey()] or 1)) then
 				spawnPed(myPos)
 			end
 		end

@@ -75,6 +75,11 @@ local special = {
 	FireServer = function() end,
 	FillBlock = function() end,
 	GetTagged = function() return {} end,
+	GetServerTimeNow = function() return os.clock() end,
+	Raycast = function() return nil end,
+	Create = function() return { Play = function() end } end,
+	FireAllClients = function() end,
+	FireClient = function() end,
 	BulkMoveTo = function() end,
 }
 
@@ -132,6 +137,7 @@ function H.makeEnv(gameObj, extra)
 		ColorSequence = roblox.ColorSequence, NumberSequence = roblox.NumberSequence, NumberRange = roblox.NumberRange,
 		ColorSequenceKeypoint = roblox.ColorSequenceKeypoint, PhysicalProperties = roblox.PhysicalProperties,
 		TweenInfo = { new = function() return {} end },
+		RaycastParams = { new = function() return {} end },
 		Random = { new = function(seed)
 			local state = (seed or 1) % 2147483647
 			if state <= 0 then state += 2147483646 end

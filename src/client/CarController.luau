@@ -2,6 +2,8 @@
 -- A/D — поворот. Работает с LinearVelocity/AngularVelocity из VehicleService.
 
 local Players = game:GetService("Players")
+-- Сцепление с дорогой по погоде: скорость и разгон.
+local GRIP = { Rain = 0.9, Storm = 0.85, Snow = 0.7, Fog = 0.95 }
 local RunService = game:GetService("RunService")
 
 local CarController = {}
@@ -37,7 +39,8 @@ function CarController.Start()
 			return
 		end
 		CarController.Driving = true
-		local maxSpeed = model:GetAttribute("MaxSpeed") or 60
+		local grip = GRIP[workspace:GetAttribute("Weather") or "Clear"] or 1
+		local maxSpeed = (model:GetAttribute("MaxSpeed") or 60) * grip
 		local throttle = seat.ThrottleFloat
 		local steer = seat.SteerFloat
 
@@ -51,7 +54,7 @@ function CarController.Start()
 		elseif (throttle > 0 and speed < 0) or (throttle < 0 and speed > 0) then
 			accel = 90 -- торможение
 		end
-		speed = approach(speed, target, accel * dt)
+		speed = approach(speed, target, accel * grip * dt)
 
 		local look = root.CFrame.LookVector
 		local flat = Vector3.new(look.X, 0, look.Z)
