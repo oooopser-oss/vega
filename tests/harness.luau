@@ -74,6 +74,8 @@ local special = {
 	Play = function() end,
 	FireServer = function() end,
 	FillBlock = function() end,
+	GetTagged = function() return {} end,
+	BulkMoveTo = function() end,
 }
 
 function wrap(real)
@@ -130,6 +132,23 @@ function H.makeEnv(gameObj, extra)
 		ColorSequence = roblox.ColorSequence, NumberSequence = roblox.NumberSequence, NumberRange = roblox.NumberRange,
 		ColorSequenceKeypoint = roblox.ColorSequenceKeypoint, PhysicalProperties = roblox.PhysicalProperties,
 		TweenInfo = { new = function() return {} end },
+		Random = { new = function(seed)
+			local state = (seed or 1) % 2147483647
+			if state <= 0 then state += 2147483646 end
+			local function nextFloat()
+				state = (state * 16807) % 2147483647
+				return state / 2147483647
+			end
+			local r = {}
+			function r:NextNumber(a, b)
+				a, b = a or 0, b or 1
+				return a + (b - a) * nextFloat()
+			end
+			function r:NextInteger(a, b)
+				return math.floor(a + (b - a + 1) * nextFloat())
+			end
+			return r
+		end },
 		warn = function(...) print("WARN", ...) end, typeof = typeofShim, print = print,
 		os = os, math = math, string = string, table = table, pcall = pcall, error = error, type = type,
 		tostring = tostring, tonumber = tonumber, setmetatable = setmetatable, ipairs = ipairs, pairs = pairs,

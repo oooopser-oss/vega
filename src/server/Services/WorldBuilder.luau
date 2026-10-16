@@ -6,6 +6,8 @@
 -- Возвращает реестр важных точек (World), который используют остальные сервисы.
 
 local Lighting = game:GetService("Lighting")
+local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local WorldBuilder = {}
 
@@ -22,6 +24,7 @@ local World = {
 	GPS = {},
 	CarSpawns = {},
 	Desks = {},
+	Workers = {}, -- сотрудники-NPC: { CFrame, Role, Name, Lines }
 }
 WorldBuilder.World = World
 
@@ -169,6 +172,17 @@ local function building(o)
 	light.Brightness = 1.2
 	light.Parent = lamp
 
+	-- Козырёк над входом и фонари по бокам двери.
+	part({ Parent = m, Name = "EntranceCanopy", Size = Vector3.new(doorW + 4, 0.5, 4), CFrame = at(0, doorH + 0.6, d / 2 + 2), Color = o.RoofColor or Color3.fromRGB(70, 70, 80), Material = Enum.Material.Metal })
+	for _, side in { -1, 1 } do
+		local wl = part({ Parent = m, Name = "WallLamp", Size = Vector3.new(0.8, 1.4, 0.6), CFrame = at(side * (doorW / 2 + 1.5), doorH - 2, d / 2 + 0.4), Color = Color3.fromRGB(255, 235, 190), Material = Enum.Material.Neon, CanCollide = false })
+		local pl = Instance.new("PointLight")
+		pl.Range = 14
+		pl.Brightness = 0.8
+		pl.Color = Color3.fromRGB(255, 220, 170)
+		pl.Parent = wl
+	end
+
 	-- Дорожка от двери к дороге.
 	if o.Path then
 		part({ Parent = m, Name = "Path", Size = Vector3.new(doorW, 0.3, o.Path), Position = at(0, 0.15, d / 2 + o.Path / 2), Color = Color3.fromRGB(180, 180, 175), Material = Enum.Material.Concrete })
@@ -176,6 +190,14 @@ local function building(o)
 
 	addGPS(o.GPSName or o.Name, at(0, 3, d / 2 + 6))
 	return m, at
+end
+
+local function worker(cf, role, name, lines)
+	table.insert(World.Workers, { CFrame = cf, Role = role, Name = name, Lines = lines })
+end
+-- Сотрудник за стойкой: стоит в точке (lx, lz) здания лицом к входу (+Z).
+local function staff(at, lx, lz, role, name, lines)
+	worker(at(lx, 0.4, lz) * CFrame.Angles(0, math.rad(180), 0), role, name, lines)
 end
 
 local function counter(parent, pos, size, color)
@@ -190,10 +212,36 @@ local function interactable(parent, name, pos, size, color, label, material)
 	return p
 end
 
+-- Деревья трёх видов, как на Урале: лиственные, ели и берёзы.
 local function tree(pos)
-	part({ Name = "Trunk", Size = Vector3.new(2, 10, 2), Position = pos + Vector3.new(0, 5, 0), Color = Color3.fromRGB(100, 70, 40), Material = Enum.Material.Wood })
-	local leaves = part({ Name = "Leaves", Shape = Enum.PartType.Ball, Size = Vector3.new(11, 11, 11), Position = pos + Vector3.new(0, 12, 0), Color = Color3.fromRGB(60, 140 + math.random(0, 40), 60), Material = Enum.Material.Grass })
-	leaves.CanCollide = false
+	local kind = (math.floor(pos.X * 7 + pos.Z * 13) % 3)
+	if kind == 0 then
+		-- Ель: ствол и три яруса хвои.
+		part({ Name = "Trunk", Size = Vector3.new(1.4, 6, 1.4), Position = pos + Vector3.new(0, 3, 0), Color = Color3.fromRGB(90, 60, 40), Material = Enum.Material.Wood })
+		local green = Color3.fromRGB(35, 85 + math.random(0, 25), 45)
+		for i, r in { 10, 7.5, 4.5 } do
+			local l = part({ Name = "Leaves", Shape = Enum.PartType.Cylinder, Size = Vector3.new(4.5, r, r), CFrame = CFrame.new(pos + Vector3.new(0, 4 + i * 3.6, 0)) * CFrame.Angles(0, 0, math.rad(90)), Color = green, Material = Enum.Material.Grass })
+			l.CanCollide = false
+		end
+		local tip = part({ Name = "Leaves", Shape = Enum.PartType.Ball, Size = Vector3.new(2.6, 2.6, 2.6), Position = pos + Vector3.new(0, 17.5, 0), Color = green, Material = Enum.Material.Grass })
+		tip.CanCollide = false
+	elseif kind == 1 then
+		-- Берёза: белый ствол, светлая крона.
+		part({ Name = "Trunk", Size = Vector3.new(1.2, 12, 1.2), Position = pos + Vector3.new(0, 6, 0), Color = Color3.fromRGB(235, 232, 225), Material = Enum.Material.SmoothPlastic })
+		part({ Name = "TrunkMark", Size = Vector3.new(1.25, 0.5, 1.25), Position = pos + Vector3.new(0, 4.5, 0), Color = Color3.fromRGB(40, 40, 40), CanCollide = false })
+		for _, off in { Vector3.new(0, 13, 0), Vector3.new(1.5, 15.5, 0.8) } do
+			local l = part({ Name = "Leaves", Shape = Enum.PartType.Ball, Size = Vector3.new(7, 7, 7), Position = pos + off, Color = Color3.fromRGB(120, 175 + math.random(0, 25), 70), Material = Enum.Material.Grass })
+			l.CanCollide = false
+		end
+	else
+		-- Лиственное дерево с пышной кроной.
+		part({ Name = "Trunk", Size = Vector3.new(2, 9, 2), Position = pos + Vector3.new(0, 4.5, 0), Color = Color3.fromRGB(100, 70, 40), Material = Enum.Material.Wood })
+		local green = Color3.fromRGB(60, 135 + math.random(0, 40), 55)
+		for _, off in { Vector3.new(0, 12, 0), Vector3.new(2.5, 10.5, 1), Vector3.new(-2, 11, -1.5) } do
+			local l = part({ Name = "Leaves", Shape = Enum.PartType.Ball, Size = Vector3.new(8, 8, 8), Position = pos + off, Color = green, Material = Enum.Material.Grass })
+			l.CanCollide = false
+		end
+	end
 end
 
 local function bench(pos, facingZ)
@@ -207,8 +255,11 @@ local function bench(pos, facingZ)
 end
 
 local function streetLamp(pos)
-	part({ Name = "LampPost", Size = Vector3.new(0.8, 16, 0.8), Position = pos + Vector3.new(0, 8, 0), Color = Color3.fromRGB(50, 50, 55), Material = Enum.Material.Metal })
-	local bulb = part({ Name = "LampBulb", Size = Vector3.new(2, 1, 2), Position = pos + Vector3.new(0, 16.5, 0), Color = Color3.fromRGB(255, 240, 200), Material = Enum.Material.Neon, CanCollide = false })
+	part({ Name = "LampBase", Size = Vector3.new(1.4, 1.2, 1.4), Position = pos + Vector3.new(0, 0.6, 0), Color = Color3.fromRGB(45, 45, 50), Material = Enum.Material.Metal })
+	part({ Name = "LampPost", Size = Vector3.new(0.7, 17, 0.7), Position = pos + Vector3.new(0, 8.5, 0), Color = Color3.fromRGB(55, 55, 60), Material = Enum.Material.Metal })
+	part({ Name = "LampArm", Size = Vector3.new(4, 0.4, 0.4), Position = pos + Vector3.new(1.8, 16.8, 0), Color = Color3.fromRGB(55, 55, 60), Material = Enum.Material.Metal })
+	part({ Name = "LampHood", Size = Vector3.new(2.6, 0.6, 1.6), Position = pos + Vector3.new(3.6, 16.7, 0), Color = Color3.fromRGB(55, 55, 60), Material = Enum.Material.Metal })
+	local bulb = part({ Name = "LampBulb", Size = Vector3.new(2.2, 0.3, 1.2), Position = pos + Vector3.new(3.6, 16.3, 0), Color = Color3.fromRGB(255, 240, 200), Material = Enum.Material.Neon, CanCollide = false })
 	local l = Instance.new("PointLight")
 	l.Range = 35
 	l.Brightness = 1.5
@@ -344,7 +395,7 @@ local function buildRoads()
 		local jointColor = w <= 12 and Color3.fromRGB(105, 105, 110) or Color3.fromRGB(48, 48, 54)
 		local jw = w <= 12 and w - 2 or w
 		part({ Parent = folder, Name = "Joint", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.6, jw, jw), CFrame = CFrame.new(x, ROAD_TOP - 0.31, z) * CFrame.Angles(0, 0, math.rad(90)), Color = jointColor, Material = Enum.Material.Asphalt })
-		if w >= 18 then
+		if w >= 18 and r[4] ~= "0" then
 			part({ Parent = folder, Name = "SidewalkJoint", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.6, w + 10, w + 10), CFrame = CFrame.new(x, WALK_TOP - 0.31, z) * CFrame.Angles(0, 0, math.rad(90)), Color = SIDEWALK, Material = Enum.Material.Concrete })
 		end
 		maybeYield()
@@ -405,7 +456,29 @@ local function buildRealBuildings()
 			part({ Parent = folder, Name = "Plinth", Size = Vector3.new(sx + 0.4, 1.8, sz + 0.4), CFrame = base * CFrame.new(0, 0.9, 0), Color = color:Lerp(Color3.new(0, 0, 0), 0.35), Material = Enum.Material.Concrete })
 			part({ Parent = folder, Name = "Parapet", Size = Vector3.new(sx + 0.6, 0.9, sz + 0.6), CFrame = base * CFrame.new(0, h + 0.2, 0), Color = color:Lerp(Color3.new(1, 1, 1), 0.3), Material = Enum.Material.Concrete })
 			for y = 4.5, h - 3, 5 do
-				part({ Parent = folder, Name = "Windows", Size = Vector3.new(sx + 0.2, 1.8, sz + 0.2), CFrame = base * CFrame.new(0, y, 0), Color = WINDOW, Material = Enum.Material.Glass, CanCollide = false })
+				local band = part({ Parent = folder, Name = "Windows", Size = Vector3.new(sx + 0.2, 1.8, sz + 0.2), CFrame = base * CFrame.new(0, y, 0), Color = WINDOW, Material = Enum.Material.Glass, CanCollide = false })
+				if (math.floor(cx + cz + y) % 3) == 0 then
+					band:AddTag("NightGlow") -- вечером в этих квартирах зажигается свет
+				end
+			end
+			-- Детали фасада на длинных секциях: лоджии, подъезды с козырьками, вентиляция.
+			local long, short = math.max(sx, sz), math.min(sx, sz)
+			if long >= 28 and short >= 8 then
+				local rot = sx >= sz and base or base * CFrame.Angles(0, math.rad(90), 0)
+				local lighter = color:Lerp(Color3.new(1, 1, 1), 0.25)
+				for _, f in { -0.3, 0, 0.3 } do
+					part({ Parent = folder, Name = "Loggias", Size = Vector3.new(5, h - 6, 1.6), CFrame = rot * CFrame.new(long * f, 3 + (h - 6) / 2, short / 2 + 0.8), Color = lighter, Material = Enum.Material.Concrete })
+				end
+				local entrances = math.max(1, math.floor(long / 32))
+				for i = 1, entrances do
+					local ex = -long / 2 + long * (i - 0.5) / entrances
+					part({ Parent = folder, Name = "Entrance", Size = Vector3.new(3, 4.4, 0.3), CFrame = rot * CFrame.new(ex, 2.2, -short / 2 - 0.15), Color = Color3.fromRGB(95, 60, 35), Material = Enum.Material.Wood, CanCollide = false })
+					part({ Parent = folder, Name = "Canopy", Size = Vector3.new(5, 0.4, 2.6), CFrame = rot * CFrame.new(ex, 5, -short / 2 - 1.3), Color = Color3.fromRGB(120, 120, 125), Material = Enum.Material.Metal })
+				end
+				part({ Parent = folder, Name = "RoofVent", Size = Vector3.new(3, 2.2, 3), CFrame = rot * CFrame.new(long * 0.2, h + 1.6, 0), Color = Color3.fromRGB(150, 150, 150), Material = Enum.Material.Concrete })
+				if (math.floor(cx) % 2) == 0 then
+					part({ Parent = folder, Name = "Antenna", Size = Vector3.new(0.3, 6, 0.3), CFrame = rot * CFrame.new(-long * 0.25, h + 3.5, 0), Color = Color3.fromRGB(90, 90, 95), Material = Enum.Material.Metal })
+				end
 			end
 		end
 		maybeYield()
@@ -593,9 +666,12 @@ local function buildCityHall(a)
 	local roles = counter(m, at(20, 1.9, -20), Vector3.new(14, 3.5, 3))
 	floatLabel(roles, "Смена профессии / роли", 4)
 	World.Desks.Roles = roles
+	staff(at, 20, -23, "clerk", "Инспектор отдела кадров", { "Хотите сменить профессию? Подойдите к стойке.", "Полиция и спецслужбы всегда ждут ответственных людей." })
 	local realty = counter(m, at(0, 1.9, -25), Vector3.new(12, 3.5, 3), Color3.fromRGB(70, 110, 160))
 	floatLabel(realty, "Агентство недвижимости", 4)
 	World.Desks.Realty = realty
+	staff(at, 0, -28, "clerk", "Риелтор", { "Коттеджи в центре — лучший выбор! Всего несколько тысяч.", "После свадьбы супруги живут в одном доме." })
+	staff(at, -20, -22, "clerk", "Специалист биржи труда", { "Работы много: кассир, повар, офис, грузчик, курьер.", "Помните: после смены нужно отдохнуть." })
 
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "CitySpawn"
@@ -621,6 +697,7 @@ local function buildPolice(a)
 		part({ Parent = m, Name = "Locker", Size = Vector3.new(4, 8, 2), Position = at(-40 + i * 5, 4, -32), Color = Color3.fromRGB(100, 110, 120), Material = Enum.Material.Metal })
 	end
 	World.Spawns.PoliceStation = (at(0, 4, -10))
+	staff(at, 0, 7.5, "police", "Дежурный ОМВД", { "Добро пожаловать в ОМВД Первоуральска.", "Видели что-то подозрительное? Сообщите патрулю." })
 	local pad = part({ Parent = m, Name = "CarPad", Size = Vector3.new(16, 0.3, 24), Position = at(-35, 0.2, 55), Color = Color3.fromRGB(40, 40, 120) })
 	local kiosk = interactable(m, "CarKiosk", at(-24, 2.5, 55), Vector3.new(2, 5, 2), Color3.fromRGB(40, 40, 120), "Служебный транспорт")
 	World.PoliceCarKiosk = kiosk
@@ -631,6 +708,7 @@ local function buildHospital(a)
 	local m, at = building({ Name = "Hospital", GPSName = "Городская больница №1", X = a.X, Z = a.Z, Yaw = a.Yaw, W = 100, D = 80, H = 20, Color = Color3.fromRGB(245, 245, 250), Sign = "ГОРОДСКАЯ БОЛЬНИЦА №1", SignColor = Color3.fromRGB(200, 40, 50), Path = 40, DoorW = 14 })
 	counter(m, at(0, 1.9, 20), Vector3.new(18, 3.5, 3), Color3.fromRGB(230, 230, 240))
 	World.Spawns.Hospital = (at(0, 4, 28))
+	staff(at, 0, 17.5, "doctor", "Медсестра", { "Плохо себя чувствуете? Койки у дальней стены.", "Не забывайте есть и высыпаться!" })
 	World.JobPoints.Hospital = {}
 	for i, lx in { -36, -20, 20, 36 } do
 		local bed = interactable(m, "HospitalBed", at(lx, 1.4, -25), Vector3.new(6, 2, 10), Color3.fromRGB(220, 240, 255), "Больничная койка", Enum.Material.Fabric)
@@ -649,6 +727,8 @@ local function buildBank(a)
 	local teller = interactable(m, "Teller", at(0, 4.5, 5), Vector3.new(2, 1, 1), Color3.fromRGB(240, 220, 120), "Кассир банка")
 	teller.CanCollide = false
 	table.insert(World.ATMs, teller)
+	staff(at, 0, 2.5, "clerk", "Операционист банка", { "Храните деньги на карте — так надёжнее.", "Банкоматы есть у входа." })
+	worker(at(-8, 0.4, 30) * CFrame.Angles(0, math.rad(180), 0), "guard", "Охранник", { "Проходите, не задерживайтесь.", "Хранилище под надёжной охраной!" })
 	for _, lx in { -30, 30 } do
 		local atm = interactable(m, "ATM", at(lx, 3, 42), Vector3.new(3, 6, 2), Color3.fromRGB(40, 120, 70), "Банкомат", Enum.Material.Metal)
 		table.insert(World.ATMs, atm)
@@ -693,6 +773,7 @@ local function buildSupermarket(a)
 	end
 	local shop = interactable(m, "ShopCounter", at(32, 2, 26), Vector3.new(10, 4, 4), Color3.fromRGB(240, 160, 60), "Продукты")
 	World.Shops.Supermarket = shop
+	staff(at, 32, 22.5, "cashier", "Продавец", { "Свежий хлеб и салаты — у нас!", "Кофе бодрит лучше всего." })
 	local safe = interactable(m, "Safe", at(40, 2, -32), Vector3.new(4, 4, 4), Color3.fromRGB(60, 60, 60), nil, Enum.Material.DiamondPlate)
 	World.Robbery.Supermarket = safe
 	local atm = interactable(m, "ATM", at(-44, 3, 42), Vector3.new(3, 6, 2), Color3.fromRGB(40, 120, 70), "Банкомат", Enum.Material.Metal)
@@ -708,6 +789,7 @@ local function buildFlorist(a)
 	surfaceText(kiosk, Enum.NormalId.Front, "ЦВЕТЫ", Color3.fromRGB(220, 80, 140))
 	local fshop = interactable(nil, "FloristCounter", base * CFrame.new(0, 2, 6.5), Vector3.new(8, 4, 2), Color3.fromRGB(250, 220, 230), "Цветы, подарки, кольца")
 	World.Shops.Florist = fshop
+	worker(base * CFrame.new(5, 0.4, 8) * CFrame.Angles(0, math.rad(180), 0), "clerk", "Флорист", { "Цветы — лучший подарок!", "Обручальные кольца тоже у нас." })
 	addGPS("Цветочный магазин", base * CFrame.new(0, 3, 12))
 end
 
@@ -717,6 +799,7 @@ local function buildCafe(a)
 	local shop = interactable(m, "CafeCounter", at(-10, 4.5, 4), Vector3.new(3, 1, 1), Color3.fromRGB(255, 220, 150), "Меню")
 	shop.CanCollide = false
 	World.Shops.Cafe = shop
+	staff(at, -10, -1, "cook", "Официант", { "Пельмени сегодня особенно удались!", "Присаживайтесь за любой столик." })
 	local reg = interactable(m, "CafeRegister", at(10, 4.2, 2), Vector3.new(2, 1, 1.5), Color3.fromRGB(30, 30, 30))
 	reg.CanCollide = false
 	World.Robbery.Cafe = reg
@@ -738,6 +821,7 @@ local function buildDealership(a)
 	local m, at = building({ Name = "Dealership", GPSName = "Автосалон", X = a.X, Z = a.Z, Yaw = a.Yaw, W = 90, D = 60, H = 16, Color = Color3.fromRGB(200, 210, 220), Material = Enum.Material.Glass, Sign = "АВТОСАЛОН", SignColor = Color3.fromRGB(180, 30, 30), Path = 40, DoorW = 20 })
 	local desk = interactable(m, "SalesDesk", at(0, 2, -20), Vector3.new(12, 4, 3), Color3.fromRGB(180, 30, 30), "Купить машину")
 	World.Dealership = desk
+	staff(at, 0, -23, "clerk", "Менеджер автосалона", { "Спорткар — мечта каждого!", "Купленную машину можно вызвать через телефон." })
 	-- Витринные машины (декорация).
 	for i, lx in { -28, 28 } do
 		local c = i == 1 and Color3.fromRGB(220, 30, 30) or Color3.fromRGB(60, 90, 60)
@@ -765,6 +849,7 @@ local function buildFactory(a)
 	end
 	local depot = interactable(m, "CourierDepot", at(30, 2, 20), Vector3.new(10, 4, 4), Color3.fromRGB(240, 200, 60), "Склад посылок")
 	World.JobPoints.CourierDepot = depot
+	worker(at(-30, 0.4, -26), "worker", "Мастер цеха", { "Грузчики и курьеры всегда нужны заводу.", "Каска — обязательна!" })
 
 	-- Убежище преступников за заводом.
 	local shack = part({ Name = "Hideout", Size = Vector3.new(20, 10, 16), Position = at(0, 5, -70), Color = Color3.fromRGB(70, 60, 55), Material = Enum.Material.CorrodedMetal })
@@ -790,6 +875,7 @@ local function buildWedding(a)
 	part({ Parent = m, Name = "Carpet", Size = Vector3.new(6, 0.1, 70), Position = at(0, 0.45, 0), Color = Color3.fromRGB(180, 30, 40), Material = Enum.Material.Fabric, CanCollide = false })
 	local altar = interactable(m, "Altar", at(0, 2, -32), Vector3.new(10, 4, 4), Color3.fromRGB(240, 220, 160), "Регистрация брака", Enum.Material.Marble)
 	World.Church = { Altar = altar, Center = at(0, 0, 0).Position, Radius = 45 }
+	staff(at, 0, -35.5, "clerk", "Регистратор ЗАГСа", { "Для росписи нужно прийти вдвоём и быть помолвленными.", "Поздравляем будущих молодожёнов!" })
 	-- Арка из цветов.
 	for _, lx in { -6, 6 } do
 		part({ Parent = m, Name = "Arch", Size = Vector3.new(1, 12, 1), Position = at(lx, 6, -27), Color = Color3.fromRGB(255, 180, 210), Material = Enum.Material.Fabric })
@@ -881,17 +967,191 @@ local function buildNature()
 	end
 end
 
+---------------------------------------------------------------------------
+-- Улицы: светофоры, «зебры», стоп-линии, остановки, скамейки, урны
+---------------------------------------------------------------------------
+local Roads = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Roads"))
+
+local function nearGameplay(pos, dist)
+	for _, a in Meta.Anchors do
+		if (Vector3.new(a.X, 0, a.Z) - pos).Magnitude < dist then
+			return true
+		end
+	end
+	for _, h in Meta.Houses do
+		if (Vector3.new(h.X, 0, h.Z) - pos).Magnitude < dist * 0.7 then
+			return true
+		end
+	end
+	return false
+end
+
+local function nearLight(pos, dist)
+	for _, n in Roads.LightList do
+		if (Roads.Nodes[n] - pos).Magnitude < dist then
+			return true
+		end
+	end
+	return false
+end
+
+local WHITE = Color3.fromRGB(240, 240, 235)
+local POLE = Color3.fromRGB(60, 62, 68)
+
+local function trafficLight(folder, node, nodeW, e, dir)
+	-- dir — направление от перекрёстка вдоль улицы; машины едут навстречу (−dir).
+	local incoming = -dir
+	local right = Roads.Right(incoming)
+	local base = Roads.Nodes[node] + dir * (nodeW / 2 + 4) + right * (e.Width / 2 + 2.5)
+	part({ Parent = folder, Name = "LightPole", Size = Vector3.new(0.7, 15, 0.7), Position = base + Vector3.new(0, 7.5, 0), Color = POLE, Material = Enum.Material.Metal })
+	local reach = e.Width / 4 + 2.5
+	part({ Parent = folder, Name = "LightArm", Size = Vector3.new(0.4, 0.4, reach), CFrame = CFrame.lookAt(base - right * (reach / 2) + Vector3.new(0, 14.6, 0), base - right * reach + Vector3.new(0, 14.6, 0)), Color = POLE, Material = Enum.Material.Metal })
+	local headPos = base - right * reach + Vector3.new(0, 12.4, 0)
+	local head = part({ Parent = folder, Name = "TrafficLightHead", Size = Vector3.new(1.6, 4.6, 1.2), CFrame = CFrame.lookAt(headPos, headPos + dir), Color = Color3.fromRGB(30, 30, 32), Material = Enum.Material.Metal })
+	head:SetAttribute("Node", node)
+	head:SetAttribute("Group", Roads.Group(incoming))
+	for i, name in { "Red", "Yellow", "Green" } do
+		local bulb = part({ Parent = head, Name = name, Shape = Enum.PartType.Ball, Size = Vector3.new(1.1, 1.1, 1.1), CFrame = head.CFrame * CFrame.new(0, 1.45 - (i - 1) * 1.45, -0.45), Color = Color3.fromRGB(40, 40, 40), CanCollide = false })
+		bulb.CastShadow = false
+	end
+	head:AddTag("TrafficLight")
+	-- Стоп-линия на встречной полосе.
+	local stopPos = Roads.Nodes[node] + dir * (nodeW / 2 + 8) + right * (e.Width / 4) + Vector3.new(0, 0.33, 0)
+	part({ Parent = folder, Name = "StopLine", Size = Vector3.new(e.Width / 2 - 1, 0.06, 0.8), CFrame = CFrame.lookAt(stopPos, stopPos + dir), Color = WHITE, CanCollide = false })
+	-- «Зебра».
+	local cross = Roads.Nodes[node] + dir * (nodeW / 2 + 4) + Vector3.new(0, 0.33, 0)
+	local half = e.Width / 2 - 1.5
+	local off = -half
+	while off <= half do
+		local p = cross + Roads.Right(dir) * off
+		part({ Parent = folder, Name = "Crosswalk", Size = Vector3.new(1.2, 0.06, 5), CFrame = CFrame.lookAt(p, p + dir), Color = WHITE, CanCollide = false })
+		off += 2.4
+	end
+end
+
+local function busStop(folder, pos, dir, right)
+	-- Остановка стоит на тротуаре, лицом к дороге.
+	local cf = CFrame.lookAt(pos, pos - right)
+	part({ Parent = folder, Name = "StopRoof", Size = Vector3.new(11, 0.4, 4.5), CFrame = cf * CFrame.new(0, 8.2, 0), Color = Color3.fromRGB(60, 120, 170), Material = Enum.Material.Metal })
+	part({ Parent = folder, Name = "StopBack", Size = Vector3.new(11, 6, 0.3), CFrame = cf * CFrame.new(0, 4.8, 2), Color = Color3.fromRGB(170, 210, 235), Material = Enum.Material.Glass, Transparency = 0.4 })
+	for _, x in { -5.3, 5.3 } do
+		part({ Parent = folder, Name = "StopPost", Size = Vector3.new(0.4, 8, 0.4), CFrame = cf * CFrame.new(x, 4.1, 2), Color = POLE, Material = Enum.Material.Metal })
+	end
+	part({ Parent = folder, Name = "StopBench", Size = Vector3.new(8, 0.5, 1.6), CFrame = cf * CFrame.new(0, 2, 1.1), Color = Color3.fromRGB(150, 100, 60), Material = Enum.Material.Wood })
+	part({ Parent = folder, Name = "StopSignPole", Size = Vector3.new(0.4, 9, 0.4), CFrame = cf * CFrame.new(7, 4.5, -0.8), Color = POLE, Material = Enum.Material.Metal })
+	local sign = part({ Parent = folder, Name = "StopSign", Size = Vector3.new(3, 2.4, 0.2), CFrame = cf * CFrame.new(7, 8.5, -0.8), Color = Color3.fromRGB(255, 255, 255), CanCollide = false })
+	surfaceText(sign, Enum.NormalId.Front, "🚌 ОСТАНОВКА", Color3.fromRGB(30, 90, 170))
+	surfaceText(sign, Enum.NormalId.Back, "🚌 ОСТАНОВКА", Color3.fromRGB(30, 90, 170))
+end
+
+local function trashBin(folder, pos)
+	part({ Parent = folder, Name = "TrashBin", Shape = Enum.PartType.Cylinder, Size = Vector3.new(2.6, 1.6, 1.6), CFrame = CFrame.new(pos + Vector3.new(0, 1.5, 0)) * CFrame.Angles(0, 0, math.rad(90)), Color = Color3.fromRGB(60, 100, 70), Material = Enum.Material.Metal })
+end
+
+local function buildStreets()
+	local folder = Instance.new("Folder")
+	folder.Name = "StreetDetails"
+	folder.Parent = City
+	for _, n in Roads.LightList do
+		local nodeW = Roads.NodeWidth[n] or 20
+		for _, adj in Roads.Adj[n] or {} do
+			local e = Roads.Edges[adj.Edge]
+			local delta = Roads.Nodes[adj.To] - Roads.Nodes[n]
+			if delta.Magnitude > nodeW + 14 then
+				trafficLight(folder, n, nodeW, e, delta.Unit)
+			end
+		end
+		maybeYield()
+	end
+	local sinceStop = 0
+	for id, e in Roads.Edges do
+		if e.Class == "primary" or e.Class == "secondary" or e.Class == "tertiary" then
+			local a, b = Roads.Nodes[e.A], Roads.Nodes[e.B]
+			local len = (b - a).Magnitude
+			if len > 50 then
+				local dir = (b - a).Unit
+				local right = Roads.Right(dir)
+				local count = math.floor(len / 90)
+				for i = 1, count do
+					local side = (i % 2 == 0) and 1 or -1
+					local pos = a + dir * (len * i / (count + 1)) + right * side * (e.Width / 2 + 3.8)
+					if not nearGameplay(pos, 70) and not nearLight(pos, 30) then
+						if (id + i) % 3 == 0 then
+							trashBin(folder, pos)
+						else
+							bench(CFrame.lookAt(pos, pos - right * side), -1)
+						end
+					end
+				end
+				sinceStop += len
+				if (e.Class == "primary" or e.Class == "secondary") and sinceStop > 450 and len > 70 then
+					local pos = a + dir * (len / 2) + right * (e.Width / 2 + 3.5)
+					if not nearGameplay(pos, 70) and not nearLight(pos, 40) then
+						sinceStop = 0
+						busStop(folder, pos, dir, right)
+					end
+				end
+			end
+		end
+		maybeYield()
+	end
+end
+
+local function ensure(parent, className)
+	local obj = parent:FindFirstChildOfClass(className)
+	if not obj then
+		obj = Instance.new(className)
+		obj.Parent = parent
+	end
+	return obj
+end
+
+-- Освещение «Future» задаётся в файле места (build.py); здесь — атмосфера,
+-- облака и пост-обработка. Широта — как у Первоуральска (57° с. ш.).
 local function setupLighting()
 	Lighting.ClockTime = 9
-	Lighting.Brightness = 2
-	Lighting.Ambient = Color3.fromRGB(90, 90, 100)
-	Lighting.OutdoorAmbient = Color3.fromRGB(130, 130, 140)
+	Lighting.Brightness = 3
+	Lighting.Ambient = Color3.fromRGB(70, 72, 80)
+	Lighting.OutdoorAmbient = Color3.fromRGB(125, 128, 138)
 	Lighting.GlobalShadows = true
-	if not Lighting:FindFirstChildOfClass("Atmosphere") then
-		local atm = Instance.new("Atmosphere")
-		atm.Density = 0.25
-		atm.Haze = 1
-		atm.Parent = Lighting
+	Lighting.EnvironmentDiffuseScale = 1
+	Lighting.EnvironmentSpecularScale = 1
+	Lighting.ShadowSoftness = 0.15
+	Lighting.GeographicLatitude = 57
+	local atm = ensure(Lighting, "Atmosphere")
+	atm.Density = 0.3
+	atm.Offset = 0.25
+	atm.Color = Color3.fromRGB(199, 205, 215)
+	atm.Decay = Color3.fromRGB(106, 112, 125)
+	atm.Glare = 0.2
+	atm.Haze = 1.4
+	local bloom = ensure(Lighting, "BloomEffect")
+	bloom.Intensity = 0.35
+	bloom.Size = 24
+	bloom.Threshold = 1.6
+	local cc = ensure(Lighting, "ColorCorrectionEffect")
+	cc.Brightness = 0.02
+	cc.Contrast = 0.08
+	cc.Saturation = 0.12
+	cc.TintColor = Color3.fromRGB(255, 250, 245)
+	local rays = ensure(Lighting, "SunRaysEffect")
+	rays.Intensity = 0.06
+	rays.Spread = 0.8
+	local clouds = ensure(workspace.Terrain, "Clouds")
+	clouds.Cover = 0.55
+	clouds.Density = 0.6
+end
+
+-- Ночью в части окон загорается тёплый свет.
+local nightState
+function WorldBuilder.SetNight(isNight)
+	if nightState == isNight then
+		return
+	end
+	nightState = isNight
+	for _, band in CollectionService:GetTagged("NightGlow") do
+		band.Material = isNight and Enum.Material.Neon or Enum.Material.Glass
+		band.Color = isNight and Color3.fromRGB(255, 205, 130) or WINDOW
 	end
 end
 
@@ -930,6 +1190,7 @@ function WorldBuilder.Build()
 	buildJail(anchors.Jail)
 	buildPatrolPosts()
 	buildNature()
+	buildStreets()
 	setupLighting()
 
 	local cars = Instance.new("Folder")

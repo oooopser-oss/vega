@@ -69,6 +69,15 @@ local steps = {
 	function() fire("DoorBell", { From = "Anna", House = 3 }); fire("Bubble", { Text = "hi" }); fire("CloseMenus", {}) end,
 	function() for _, s in RunService.RenderStepped.handlers do s(0.2) end for _, s in RunService.Heartbeat.handlers do s(0.2) end end,
 	function() fire("OpenPhone", { Tab = "Дом" }); clickText("Продать") ; fire("OpenBank", {}); clickText("Внести") end,
+	function()
+		-- Городская жизнь: машины и прохожие появляются и двигаются.
+		for _ = 1, 40 do
+			for _, h in RunService.Heartbeat.handlers do h(0.3) end
+		end
+		local life = place:GetService("Workspace"):FindFirstChild("AmbientLife")
+		assert(life and #life:GetChildren() > 10, "мало машин/прохожих: " .. (life and #life:GetChildren() or 0))
+		print("ambient objects", #life:GetChildren())
+	end,
 }
 local failed = 0
 for i, step in steps do

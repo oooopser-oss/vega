@@ -13,6 +13,7 @@ local player = Players.LocalPlayer
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 local Ui = require(script.Parent:WaitForChild("Ui"))
 local CarController = require(script.Parent:WaitForChild("CarController"))
+local Ambient = require(script.Parent:WaitForChild("Ambient"))
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local ActionRemote = Remotes:WaitForChild("Action")
@@ -1084,4 +1085,7 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 
 CarController.Start()
+Ambient.Start(function()
+	send("TalkNPC")
+end)
 send("GetState")

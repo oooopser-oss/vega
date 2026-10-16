@@ -78,6 +78,8 @@ def main():
         # Потоковая загрузка карты: клиент держит в памяти только ближайшие районы.
         item("Workspace", "Workspace", props='<bool name="StreamingEnabled">true</bool>'
              '<int name="StreamingTargetRadius">1024</int><int name="StreamingMinRadius">256</int>'),
+        # Освещение Future: тени и свет фонарей; на слабых устройствах Roblox сам упрощает.
+        item("Lighting", "Lighting", props='<token name="Technology">4</token>'),
         item("ReplicatedStorage", "ReplicatedStorage", body=shared),
         item("ServerScriptService", "ServerScriptService", body=server),
         item("StarterPlayer", "StarterPlayer", body=item("StarterPlayerScripts", "StarterPlayerScripts", body=client)),

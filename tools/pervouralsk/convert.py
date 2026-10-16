@@ -63,7 +63,7 @@ ROAD_W = {
 ROAD_CLASSES = list(ROAD_W) + ["rail"]
 MAJOR = {"primary", "secondary", "tertiary", "unclassified", "residential", "living_street"}
 
-roads = []  # (LineString, class, name)
+raw_roads = []  # (LineString, class, name) — как в исходных данных
 for r in load("transportation_segment.parquet"):
     cls = r["class"] if r["subtype"] == "road" else ("rail" if r["subtype"] == "rail" else None)
     if cls not in ROAD_W and cls != "rail":
@@ -75,7 +75,46 @@ for r in load("transportation_segment.parquet"):
     for line in getattr(g, "geoms", [g]):
         if line.geom_type != "LineString" or line.length < 2:
             continue
-        roads.append((line.simplify(1.5), cls, name))
+        raw_roads.append((line, cls, name))
+
+# Выпрямление дорог. В OSM улица — ломаная из множества мелких точек, из-за
+# чего в игре дорога «виляет». Режем каждую улицу на куски между перекрёстками
+# (перекрёстки остаются на месте) и упрощаем куски с большим допуском:
+# почти прямой участок превращается в одну прямую.
+def ckey(c):
+    return (round(c[0], 1), round(c[1], 1))
+
+usage = {}
+for line, cls, _ in raw_roads:
+    if cls == "rail":
+        continue
+    cs = list(line.coords)
+    for i, c in enumerate(cs):
+        k = ckey(c)
+        usage[k] = usage.get(k, 0) + (2 if i in (0, len(cs) - 1) else 1)
+junction = {k for k, n in usage.items() if n >= 2}
+
+STRAIGHTEN = {"rail": 6.0, "service": 4.0, "pedestrian": 4.0}
+roads = []
+for line, cls, name in raw_roads:
+    cs = list(line.coords)
+    pieces, cur = [], [cs[0]]
+    for c in cs[1:]:
+        cur.append(c)
+        if ckey(c) in junction and c is not cs[-1]:
+            pieces.append(cur)
+            cur = [c]
+    if len(cur) >= 2:
+        pieces.append(cur)
+    tol = STRAIGHTEN.get(cls, 8.0)
+    for pc in pieces:
+        if len(pc) < 2:
+            continue
+        piece = LineString(pc)
+        if piece.length < 1:
+            continue
+        roads.append((piece.simplify(tol, preserve_topology=False), cls, name))
+print("roads raw vertices", sum(len(l.coords) for l, _, _ in raw_roads), "-> straightened", sum(len(l.coords) for l, _, _ in roads))
 
 major_lines = [l for l, c, _ in roads if c in MAJOR]
 major_buf = unary_union([l.buffer(ROAD_W[c] / 2) for l, c, _ in roads if c in MAJOR])
@@ -307,22 +346,103 @@ reserved_union = unary_union(reserved)
 CLS_INDEX = {c: i + 1 for i, c in enumerate(ROAD_CLASSES)}
 
 road_out = []
-discs = {}
-for line, cls, name in roads:
-    if cls in ("service", "pedestrian") and line.intersects(reserved_union):
-        continue
+kept = [(l, c, n) for l, c, n in roads if not (c in ("service", "pedestrian") and l.intersects(reserved_union))]
+for line, cls, name in kept:
     w = ROAD_W.get(cls, 8)
     coords = list(line.coords)
     for (x1, z1), (x2, z2) in zip(coords, coords[1:]):
         if math.hypot(x2 - x1, z2 - z1) < 0.5:
             continue
         road_out.append(f"{r1(x1)},{r1(z1)},{r1(x2)},{r1(z2)},{w},{CLS_INDEX[cls]}")
-    if cls != "rail":
-        for x, z in coords:
-            k = (round(x / 2), round(z / 2))
-            if discs.get(k, (0,))[0] < w:
-                discs[k] = (w, x, z)
-disc_out = [f"{r1(x)},{r1(z)},{w}" for w, x, z in discs.values()]
+
+# Круглые стыки нужны только на перекрёстках и поворотах (иначе на концах
+# тупиков и на прямых участках появляются «блямбы»).
+def unit(a, b):
+    dx, dz = b[0] - a[0], b[1] - a[1]
+    d = math.hypot(dx, dz) or 1
+    return (dx / d, dz / d)
+
+ends = {}  # ключ узла -> список (направление от узла, ширина)
+for line, cls, name in kept:
+    if cls == "rail":
+        continue
+    cs = list(line.coords)
+    if len(cs) < 2:
+        continue
+    w = ROAD_W.get(cls, 8)
+    for pt, nxt in ((cs[0], cs[1]), (cs[-1], cs[-2])):
+        k = (round(pt[0] / 2), round(pt[1] / 2))
+        ends.setdefault(k, []).append((unit(pt, nxt), w, pt))
+
+discs = {}
+def add_disc(pt, w, walk):
+    k = (round(pt[0] / 2), round(pt[1] / 2))
+    old = discs.get(k)
+    if not old or old[0] < w:
+        discs[k] = (w, pt[0], pt[1], walk or (old and old[3]))
+
+TURN = math.cos(math.radians(10))
+for line, cls, name in kept:
+    if cls == "rail":
+        continue
+    cs = list(line.coords)
+    w = ROAD_W.get(cls, 8)
+    for i in range(1, len(cs) - 1):
+        d1, d2 = unit(cs[i - 1], cs[i]), unit(cs[i], cs[i + 1])
+        if d1[0] * d2[0] + d1[1] * d2[1] < TURN:
+            add_disc(cs[i], w, True)
+for k, lst in ends.items():
+    # Дворовые проезды (узкие) просто примыкают к улице — стык по ним не нужен.
+    majors = [e for e in lst if e[1] >= 18]
+    if len(majors) >= 3:
+        for d, w, pt in majors:
+            add_disc(pt, w, True)
+    elif len(majors) == 2:
+        (d1, w1, p1), (d2, w2, p2) = majors
+        # Продолжение улицы: стык нужен, только если есть поворот.
+        if -(d1[0] * d2[0] + d1[1] * d2[1]) < TURN:
+            add_disc(p1, min(w1, w2), True)
+    elif len(majors) == 0 and len(lst) >= 2:
+        # Перекрёсток проездов между собой.
+        ws = [e[1] for e in lst]
+        dirs = [e[0] for e in lst]
+        if len(lst) >= 3 or -(dirs[0][0] * dirs[1][0] + dirs[0][1] * dirs[1][1]) < TURN:
+            add_disc(lst[0][2], min(ws), False)
+disc_out = [f"{r1(x)},{r1(z)},{w},{1 if walk else 0}" for w, x, z, walk in discs.values()]
+print("road joints", len(disc_out))
+
+# Граф дорог для машин и прохожих (только проезжие улицы).
+TRAFFIC = {"primary", "secondary", "tertiary", "unclassified", "residential", "living_street"}
+node_index, nodes, edges = {}, [], []
+def node_of(c):
+    k = (round(c[0]), round(c[1]))
+    if k not in node_index:
+        node_index[k] = len(nodes) + 1
+        nodes.append(c)
+    return node_index[k]
+for line, cls, name in roads:
+    if cls not in TRAFFIC or line.length < 4:
+        continue
+    cs = list(line.coords)
+    for a_, b_ in zip(cs, cs[1:]):
+        ia, ib = node_of(a_), node_of(b_)
+        if ia != ib:
+            edges.append((ia, ib, ROAD_W[cls], CLS_INDEX[cls]))
+degree, bigdeg = {}, {}
+for ia, ib, w, ci in edges:
+    for n in (ia, ib):
+        degree[n] = degree.get(n, 0) + 1
+        if ROAD_CLASSES[ci - 1] in ("primary", "secondary", "tertiary"):
+            bigdeg[n] = bigdeg.get(n, 0) + 1
+lights = [n for n, d in degree.items() if d >= 3 and bigdeg.get(n, 0) >= 2]
+# Светофоры не ставим вплотную друг к другу.
+picked = []
+for n in sorted(lights, key=lambda n: -degree[n]):
+    x, z = nodes[n - 1]
+    if all(math.hypot(x - nodes[m - 1][0], z - nodes[m - 1][1]) > 60 for m in picked):
+        picked.append(n)
+lights = picked
+print("traffic nodes", len(nodes), "edges", len(edges), "lights", len(lights))
 
 # Названия улиц.
 signs = []
@@ -586,6 +706,19 @@ chunks = {
     "CarSpawns": write_chunks("CarSpawns", car_spawns),
     "Signs": write_chunks("Signs", signs),
 }
+
+
+graph_path = os.path.join(HERE, "..", "..", "src", "shared", "TrafficGraph.luau")
+with open(graph_path, "w", encoding="utf-8") as f:
+    f.write("-- Граф улиц Первоуральска для машин, прохожих и светофоров.\n")
+    f.write("-- Сгенерировано tools/pervouralsk/convert.py. Данные © участники OpenStreetMap (ODbL).\n")
+    f.write("return {\n")
+    f.write("\tNodes = " + lua_str(";".join(f"{r1(x)},{r1(z)}" for x, z in nodes)) + ",\n")
+    f.write("\tEdges = " + lua_str(";".join(f"{a},{b},{w},{c}" for a, b, w, c in edges)) + ",\n")
+    f.write("\tLights = " + lua_str(";".join(str(n) for n in lights)) + ",\n")
+    f.write("\tRoadClasses = { " + ", ".join(f'"{c}"' for c in ROAD_CLASSES) + " },\n")
+    f.write("}\n")
+print("wrote", graph_path, os.path.getsize(graph_path))
 
 
 def anchor_lua(a):

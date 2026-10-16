@@ -33,9 +33,10 @@ local ctx = {
 	Vehicles = require(Services.VehicleService),
 	Monetization = require(Services.MonetizationService),
 	Quests = require(Services.QuestService),
+	Npcs = require(Services.NpcService),
 }
 
-for _, name in { "Needs", "Economy", "Jobs", "Crime", "Tools", "Housing", "Social", "Vehicles", "Monetization", "Quests", "Players" } do
+for _, name in { "Needs", "Economy", "Jobs", "Crime", "Tools", "Housing", "Social", "Vehicles", "Monetization", "Quests", "Npcs", "Players" } do
 	ctx[name].Init(ctx)
 end
 ctx.Players.Start()
@@ -46,6 +47,7 @@ task.spawn(function()
 	while true do
 		local dt = task.wait(0.5)
 		Lighting.ClockTime = (Lighting.ClockTime + dt * hoursPerSecond) % 24
+		WorldBuilder.SetNight(Lighting.ClockTime >= 19 or Lighting.ClockTime < 6)
 	end
 end)
 

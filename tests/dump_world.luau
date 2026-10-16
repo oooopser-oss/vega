@@ -20,6 +20,16 @@ local env, req = H.makeEnv(gameObj)
 local main = H.wrap(place:GetService("ServerScriptService")).Server.Main
 H.run(main, env)
 print("SERVER INIT OK")
+-- Снимок городской жизни (машины и прохожие живут на клиенте) вокруг точки из аргументов.
+do
+	local process = require("@lune/process")
+	local roblox0 = require("@lune/roblox")
+	local cx, cz = tonumber(process.args[1] or "-160"), tonumber(process.args[2] or "-340")
+	local Ambient = req(H.wrap(H.place:GetService("StarterPlayer")).StarterPlayerScripts.Client.Ambient)
+	local folder = H.wrap(roblox0.Instance.new("Folder"))
+	folder.Parent = H.wrap(H.place:GetService("Workspace"))
+	print("ambient", Ambient.Snapshot(folder, roblox0.Vector3.new(cx, 0, cz), tonumber(process.args[3] or "30"), tonumber(process.args[4] or "45")))
+end
 local fs = require("@lune/fs")
 local roblox = require("@lune/roblox")
 local CFrame = roblox.CFrame

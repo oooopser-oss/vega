@@ -9,6 +9,11 @@
         "StreamingMinRadius": 256
       }
     },
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future"
+      }
+    },
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared"
