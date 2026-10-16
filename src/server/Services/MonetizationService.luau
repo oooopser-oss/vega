@@ -135,6 +135,10 @@ function MonetizationService.OnPlayerAdded(player)
 	task.spawn(function()
 		checkPasses(player)
 		dailyBonus(player)
+		-- Пасс «Модный гардероб» открывает премиум-одежду.
+		if ctx.Clothing then
+			ctx.Clothing.Send(player)
+		end
 	end)
 end
 
@@ -160,6 +164,9 @@ function MonetizationService.Init(c)
 			ctx.Data.SyncMoney(player)
 			ctx.Net.Notify(player, "Спасибо за покупку! +" .. product.Cash .. "$ на карту.", "good")
 		end
+		if product.Clothing then
+			ctx.Clothing.Grant(player, product.Clothing)
+		end
 		if product.Fireworks then
 			MonetizationService.Fireworks(player)
 			ctx.Net.NotifyAll("🎆 " .. player.DisplayName .. " запустил(а) салют над Первоуральском!", "info")
@@ -175,6 +182,7 @@ function MonetizationService.Init(c)
 		if purchased and key then
 			applyPass(player, key)
 			grantPassReward(player, key)
+			ctx.Clothing.Send(player)
 			ctx.Net.Notify(player, "Спасибо! Пасс «" .. M.GamePasses[key].Name .. "» активирован.", "good")
 		end
 	end)

@@ -35,6 +35,7 @@ local state = {
 	Task = nil,
 	PhoneTab = "Задания",
 	Quests = {},
+	Wardrobe = { Owned = {}, Outfit = {} },
 	SelectedPerson = nil,
 }
 
@@ -486,7 +487,7 @@ end
 ---------------------------------------------------------------------------
 -- Телефон
 ---------------------------------------------------------------------------
-local TABS = { "Задания", "Работа", "Люди", "Вещи", "Машины", "Дом", "GPS", "Магазин ⭐", "Помощь" }
+local TABS = { "Задания", "Работа", "Люди", "Вещи", "Одежда 👕", "Машины", "Дом", "GPS", "Магазин ⭐", "Помощь" }
 local phoneContent
 local renderTab
 
@@ -682,6 +683,55 @@ renderers["Вещи"] = function(c)
 	end
 end
 
+renderers["Одежда 👕"] = function(c)
+	local C = Config.Clothing
+	local w = state.Wardrobe
+	Ui.button("Вернуть свой аватар Roblox", T.Bg3, function()
+		send("Clothing", { Op = "avatar" })
+	end, { LayoutOrder = 1, Size = UDim2.new(1, -8, 0, 32), Parent = c })
+	local order = 1
+	for _, slot in C.SlotOrder do
+		order += 1
+		local worn = w.Outfit and w.Outfit[slot]
+		local head = new("Frame", { LayoutOrder = order, BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 26), Parent = c })
+		Ui.label({ Text = C.SlotNames[slot], Font = Enum.Font.GothamBold, TextSize = 15, TextColor3 = T.Accent, Size = UDim2.new(1, -100, 1, 0), Parent = head })
+		if worn then
+			Ui.button("Снять", T.Bad, function()
+				send("Clothing", { Op = "remove", Slot = slot })
+			end, { Position = UDim2.new(1, -90, 0, 0), Size = UDim2.fromOffset(90, 24), TextSize = 13, Parent = head })
+		end
+		for _, id in C.Order do
+			local item = C.Items[id]
+			if item.Slot == slot then
+				order += 1
+				local r = row(c, order, 44)
+				new("Frame", { BackgroundColor3 = item.Color, BorderSizePixel = 0, Position = UDim2.fromOffset(8, 8), Size = UDim2.fromOffset(28, 28), Parent = r }, { Ui.corner(6) })
+				local tag = item.Robux and "  ⭐ премиум" or ""
+				Ui.label({ Text = item.Name .. tag, Font = Enum.Font.GothamBold, TextSize = 14, Position = UDim2.fromOffset(44, 0), Size = UDim2.new(1, -170, 1, 0), Parent = r })
+				local owned = w.Owned and w.Owned[id]
+				local text, color, action
+				if worn == id then
+					text, color = "Надето ✓", T.Disabled
+				elseif owned then
+					text, color, action = "Надеть", T.Accent, function()
+						send("Clothing", { Op = "wear", Item = id })
+					end
+				elseif item.Robux then
+					text, color, action = "R$ " .. item.Robux, Color3.fromRGB(0, 160, 90), function()
+						send("BuyProduct", { Key = "Cloth_" .. id })
+					end
+				else
+					text, color, action = "Купить " .. item.Price .. "$", T.Good, function()
+						send("Clothing", { Op = "buy", Item = id })
+					end
+				end
+				Ui.button(text, color, action, { Position = UDim2.new(1, -118, 0.5, -15), Size = UDim2.fromOffset(110, 30), TextSize = 13, Parent = r })
+			end
+		end
+	end
+	Ui.label({ LayoutOrder = 999, TextSize = 12, TextColor3 = T.Sub, Size = UDim2.new(1, -8, 0, 40), Text = "Премиум-вещи можно купить по одной за Robux или все сразу с пассом «Модный гардероб» (вкладка «Магазин ⭐»). Одежда сохраняется между входами.", Parent = c })
+end
+
 renderers["Машины"] = function(c)
 	section(c, 1, "Мои машины")
 	local order = 1
@@ -806,7 +856,7 @@ function openPhone(tab)
 			state.PhoneTab = name
 			state.SelectedPerson = nil
 			openPhone(name)
-		end, { LayoutOrder = i, Size = UDim2.new(1, 0, 0, 40), Parent = tabs })
+		end, { LayoutOrder = i, Size = UDim2.new(1, 0, 0, 38), Parent = tabs })
 	end
 	phoneContent = Ui.scroll({ Position = UDim2.fromOffset(140, 0), Size = UDim2.new(1, -140, 1, 0), Parent = body })
 	Ui.list(6).Parent = phoneContent
@@ -957,6 +1007,10 @@ local handlers = {
 		state.Relations = p.List or {}
 		state.Partner = p.Partner
 		rerenderPhone("Люди")
+	end,
+	Wardrobe = function(p)
+		state.Wardrobe = { Owned = p.Owned or {}, Outfit = p.Outfit or {} }
+		rerenderPhone("Одежда 👕")
 	end,
 	Quests = function(p)
 		state.Quests = p

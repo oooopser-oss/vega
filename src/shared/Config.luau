@@ -273,4 +273,63 @@ function Config.Season(month)
 	return "autumn"
 end
 
+-- Одежда. Slot: Top (торс и рукава), Bottom (ноги), Hat (голова), Accessory.
+-- Price — цена в игровых $, Robux — премиум-вещь за Robux (ID товара в
+-- Config.Monetization.Products с ключом "Cloth_<id>"). Kind — форма шапки
+-- или аксессуара (см. shared/Outfits.luau). Logo — надпись на спине.
+Config.Clothing = {
+	SlotOrder = { "Top", "Bottom", "Hat", "Accessory" },
+	SlotNames = { Top = "Верх", Bottom = "Низ", Hat = "Головной убор", Accessory = "Аксессуар" },
+	Items = {
+		-- Верх
+		tee_white = { Slot = "Top", Name = "Белая футболка", Price = 0, Color = Color3.fromRGB(240, 240, 238) },
+		tee_red = { Slot = "Top", Name = "Красная футболка", Price = 150, Color = Color3.fromRGB(200, 50, 50) },
+		tee_blue = { Slot = "Top", Name = "Синяя футболка", Price = 150, Color = Color3.fromRGB(50, 90, 180) },
+		sweater = { Slot = "Top", Name = "Вязаный свитер", Price = 400, Color = Color3.fromRGB(120, 80, 60), Material = Enum.Material.Fabric },
+		suit = { Slot = "Top", Name = "Деловой пиджак", Price = 900, Color = Color3.fromRGB(35, 40, 55), Material = Enum.Material.Fabric },
+		hoodie_perv = { Slot = "Top", Name = "Худи «Первоуральск»", Robux = 49, Color = Color3.fromRGB(240, 120, 30), Material = Enum.Material.Fabric, Logo = "ПЕРВОУРАЛЬСК" },
+		leather = { Slot = "Top", Name = "Кожаная куртка", Robux = 59, Color = Color3.fromRGB(28, 26, 26), Material = Enum.Material.Leather },
+		neon_jacket = { Slot = "Top", Name = "Неоновая куртка", Robux = 79, Color = Color3.fromRGB(40, 230, 255), Material = Enum.Material.Neon },
+		gold_suit = { Slot = "Top", Name = "Золотой костюм", Robux = 149, Color = Color3.fromRGB(230, 185, 60), Material = Enum.Material.Foil },
+		-- Низ
+		jeans = { Slot = "Bottom", Name = "Джинсы", Price = 0, Color = Color3.fromRGB(45, 70, 120) },
+		black_pants = { Slot = "Bottom", Name = "Чёрные брюки", Price = 200, Color = Color3.fromRGB(25, 25, 30) },
+		khaki = { Slot = "Bottom", Name = "Брюки хаки", Price = 250, Color = Color3.fromRGB(150, 135, 95) },
+		track = { Slot = "Bottom", Name = "Спортивные штаны", Price = 180, Color = Color3.fromRGB(60, 60, 70), Material = Enum.Material.Fabric },
+		neon_pants = { Slot = "Bottom", Name = "Неоновые брюки", Robux = 59, Color = Color3.fromRGB(255, 60, 200), Material = Enum.Material.Neon },
+		-- Головные уборы
+		cap = { Slot = "Hat", Name = "Кепка", Price = 100, Kind = "cap", Color = Color3.fromRGB(200, 40, 40) },
+		beanie = { Slot = "Hat", Name = "Шапка с помпоном", Price = 120, Kind = "beanie", Color = Color3.fromRGB(60, 120, 200) },
+		ushanka = { Slot = "Hat", Name = "Шапка-ушанка", Price = 300, Kind = "ushanka", Color = Color3.fromRGB(110, 80, 55) },
+		cowboy = { Slot = "Hat", Name = "Ковбойская шляпа", Price = 350, Kind = "cowboy", Color = Color3.fromRGB(150, 100, 55) },
+		headphones = { Slot = "Hat", Name = "Наушники", Price = 400, Kind = "headphones", Color = Color3.fromRGB(30, 30, 35) },
+		tophat = { Slot = "Hat", Name = "Цилиндр", Price = 500, Kind = "tophat", Color = Color3.fromRGB(20, 20, 22) },
+		crown = { Slot = "Hat", Name = "Золотая корона", Robux = 199, Kind = "crown", Color = Color3.fromRGB(245, 200, 60) },
+		halo = { Slot = "Hat", Name = "Нимб", Robux = 99, Kind = "halo", Color = Color3.fromRGB(255, 240, 150) },
+		-- Аксессуары
+		glasses = { Slot = "Accessory", Name = "Очки", Price = 150, Kind = "glasses", Color = Color3.fromRGB(20, 20, 20) },
+		scarf = { Slot = "Accessory", Name = "Шарф", Price = 180, Kind = "scarf", Color = Color3.fromRGB(190, 40, 50) },
+		backpack = { Slot = "Accessory", Name = "Рюкзак", Price = 250, Kind = "backpack", Color = Color3.fromRGB(60, 100, 70) },
+		star_glasses = { Slot = "Accessory", Name = "Звёздные очки", Robux = 39, Kind = "star_glasses", Color = Color3.fromRGB(255, 80, 200) },
+		gold_chain = { Slot = "Accessory", Name = "Золотая цепь", Robux = 69, Kind = "chain", Color = Color3.fromRGB(245, 200, 60) },
+		wings = { Slot = "Accessory", Name = "Крылья ангела", Robux = 249, Kind = "wings", Color = Color3.fromRGB(250, 250, 255) },
+	},
+	-- Порядок в каталоге.
+	Order = {
+		"tee_white", "tee_red", "tee_blue", "sweater", "suit", "hoodie_perv", "leather", "neon_jacket", "gold_suit",
+		"jeans", "black_pants", "khaki", "track", "neon_pants",
+		"cap", "beanie", "ushanka", "cowboy", "headphones", "tophat", "crown", "halo",
+		"glasses", "scarf", "backpack", "star_glasses", "gold_chain", "wings",
+	},
+}
+
+-- Премиум-одежда продаётся как Developer Products «Cloth_<id>» (ID = 0 — не настроено).
+for id, item in Config.Clothing.Items do
+	if item.Robux then
+		Config.Monetization.Products["Cloth_" .. id] = { Id = 0, Name = item.Name, Robux = item.Robux, Clothing = id }
+	end
+end
+Config.Monetization.GamePasses.Fashion = { Id = 0, Name = "Модный гардероб", Robux = 499, Description = "Вся премиум-одежда навсегда: куртки, корона, нимб, крылья и другое." }
+table.insert(Config.Monetization.PassOrder, "Fashion")
+
 return Config

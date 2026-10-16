@@ -52,6 +52,14 @@ local steps = {
 	function() fire("OpenRoleMenu", { First = true }) end,
 	function() fire("Quests", { List = { { Text = "Выполните 5 рабочих заданий", Progress = 2, Goal = 5, Reward = 300, Done = false, Kind = "work" }, { Text = "Поешьте", Progress = 2, Goal = 2, Reward = 240, Done = true, Kind = "eat" } }, Bonus = 1500, BonusTaken = false, Streak = 3 }); fire("OpenPhone", { Tab = "Задания" }) end,
 	function() fire("OpenPhone", { Tab = "Магазин ⭐" }); assert(clickText("R$ 299"), "no pass btn") end,
+	function()
+		fire("Wardrobe", { Owned = { tee_white = true, jeans = true, cap = true }, Outfit = { Top = "tee_white", Hat = "cap" } })
+		fire("OpenPhone", { Tab = "Одежда 👕" })
+		assert(clickText("Надето"), "нет надетой вещи")
+		assert(clickText("R$ 249"), "нет премиум-кнопки крыльев")
+		assert(clickText("Купить 150$"), "нет кнопки покупки")
+		assert(clickText("Снять"), "нет кнопки снять")
+	end,
 	function() for _, s in { "Supermarket", "Cafe", "Florist" } do fire("OpenShop", { Shop = s }) end end,
 	function() fire("OpenBank", {}) end,
 	function() fire("Cars", { Owned = { sedan = true } }); fire("OpenDealer", {}) end,

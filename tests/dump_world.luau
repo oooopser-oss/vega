@@ -28,6 +28,27 @@ do
 	local Ambient = req(H.wrap(H.place:GetService("StarterPlayer")).StarterPlayerScripts.Client.Ambient)
 	local folder = H.wrap(roblox0.Instance.new("Folder"))
 	folder.Parent = H.wrap(H.place:GetService("Workspace"))
+	-- Витрина одежды: ряд манекенов в вещах из каталога (5-й аргумент "showcase").
+	if process.args[5] == "showcase" then
+		local Rig = req(H.wrap(H.place:GetService("ReplicatedStorage")).Shared.Rig)
+		local Config = req(H.wrap(H.place:GetService("ReplicatedStorage")).Shared.Config)
+		local I = Config.Clothing.Items
+		local looks = {
+			{ I.hoodie_perv, I.jeans, I.cap },
+			{ I.neon_jacket, I.neon_pants, I.headphones, I.star_glasses },
+			{ I.gold_suit, I.black_pants, I.crown, I.gold_chain },
+			{ I.leather, I.black_pants, I.tophat, I.glasses },
+			{ I.tee_white, I.khaki, I.halo, I.wings },
+			{ I.sweater, I.track, I.ushanka, I.scarf },
+			{ I.suit, I.black_pants, I.cowboy, I.backpack },
+		}
+		for i, look in looks do
+			local rig = Rig.Build({ Seed = i * 31 })
+			Rig.Dress(rig, look)
+			rig.Model.Parent = folder
+			Rig.Place(rig, roblox0.CFrame.new(cx - 18 + i * 4.5, 0.4, cz) * roblox0.CFrame.Angles(0, math.pi, 0), 0)
+		end
+	end
 	print("ambient", Ambient.Snapshot(folder, roblox0.Vector3.new(cx, 0, cz), tonumber(process.args[3] or "30"), tonumber(process.args[4] or "45")))
 end
 local fs = require("@lune/fs")

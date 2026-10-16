@@ -17,7 +17,7 @@ local TrafficCar = require(Shared:WaitForChild("TrafficCar"))
 local Ambient = {}
 
 local MAX_CARS = 24
-local MAX_PEDS = 32
+local MAX_PEDS = 18 -- меньше, но детальнее
 local CAR_SPAWN_MIN, CAR_SPAWN_MAX, CAR_DESPAWN = 120, 450, 560
 local PED_SPAWN_MIN, PED_SPAWN_MAX, PED_DESPAWN = 35, 240, 320
 

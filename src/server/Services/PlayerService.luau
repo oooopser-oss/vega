@@ -223,6 +223,7 @@ local function onPlayerAdded(player)
 	ctx.Housing.OnPlayerAdded(player)
 	ctx.Social.OnPlayerAdded(player)
 	ctx.Monetization.OnPlayerAdded(player)
+	ctx.Clothing.OnPlayerAdded(player)
 	ctx.Quests.Send(player)
 	if ctx.Data.IsReadOnly(player) then
 		ctx.Net.Notify(player, "Не удалось загрузить ваш прогресс. Перезайдите позже — ваши данные в безопасности, сейчас они не будут перезаписаны.", "bad")

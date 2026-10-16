@@ -39,6 +39,8 @@ local function defaultData()
 		Bank = Config.StartBank,
 		Inventory = { bread = 2, water = 2 },
 		Cars = {},
+		Wardrobe = {}, -- купленная одежда: [id] = true
+		Outfit = nil, -- надетый комплект { Top, Bottom, Hat, Accessory }; nil — свой аватар
 		HasHouse = false,
 		Role = "Citizen",
 		Relations = {}, -- [tostring(userId)] = { Points, Status, Name }

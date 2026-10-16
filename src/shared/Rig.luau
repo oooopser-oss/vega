@@ -2,6 +2,8 @@
 -- жителей-NPC: сотрудники в зданиях (сервер) и прохожие на улицах (клиент).
 -- Части анкерные; ходьба — покачивание рук и ног через Rig.Pose.
 
+local Outfits = require(script.Parent:WaitForChild("Outfits"))
+
 local Rig = {}
 
 local SKIN = {
@@ -87,9 +89,95 @@ function Rig.Build(opts)
 	end
 	model.PrimaryPart = parts.Torso
 
-	local rig = { Model = model, Parts = parts, Phase = rng:NextNumber() * 6.28 }
+	local rig = { Model = model, Parts = parts, Phase = rng:NextNumber() * 6.28, Extras = {} }
 	rig.List = { parts.Torso, parts.Head, parts.Hair, parts.LArm, parts.RArm, parts.LLeg, parts.RLeg }
+
+	local function extra(...)
+		return Rig.AddExtra(rig, ...)
+	end
+	local shoes = rng:NextNumber() < 0.5 and Color3.fromRGB(30, 30, 32) or Color3.fromRGB(235, 235, 235)
+	extra("ShoeL", Vector3.new(1.05, 0.35, 1.25), 6, CFrame.new(0, -0.85, -0.12), shoes)
+	extra("ShoeR", Vector3.new(1.05, 0.35, 1.25), 7, CFrame.new(0, -0.85, -0.12), shoes)
+	if parts.LArm.Color ~= skin then
+		extra("HandL", Vector3.new(1.02, 0.45, 1.02), 4, CFrame.new(0, -0.8, 0), skin)
+		extra("HandR", Vector3.new(1.02, 0.45, 1.02), 5, CFrame.new(0, -0.8, 0), skin)
+	end
+	extra("Belt", Vector3.new(2.04, 0.25, 1.04), 1, CFrame.new(0, -0.88, 0), Color3.fromRGB(45, 35, 30))
+	extra("Collar", Vector3.new(1.2, 0.18, 1.04), 1, CFrame.new(0, 0.93, 0), shirt:Lerp(Color3.new(1, 1, 1), 0.3))
+
+	if not uniform then
+		-- Причёска: короткая, длинная или пучок.
+		local style = rng:NextNumber()
+		if style < 0.35 then
+			extra("LongHair", Vector3.new(2.05, 1.2, 0.35), 2, CFrame.new(0, -0.15, 0.6), parts.Hair.Color, Enum.Material.Fabric)
+		elseif style < 0.5 then
+			extra("Bun", Vector3.new(0.7, 0.7, 0.7), 2, CFrame.new(0, 0.8, 0.4), parts.Hair.Color, Enum.Material.Fabric, Enum.PartType.Ball)
+		end
+		-- Иногда — шапка, очки, рюкзак или шарф из того же каталога, что у игроков.
+		local function wear(kind, color)
+			Rig.Wear(rig, kind, color)
+		end
+		local hats = { "cap", "beanie", "ushanka", "headphones" }
+		if rng:NextNumber() < 0.3 then
+			wear(hats[rng:NextInteger(1, #hats)], pick(SHIRTS, rng))
+			parts.Hair.Transparency = 1
+		end
+		if rng:NextNumber() < 0.2 then
+			wear("glasses", Color3.fromRGB(20, 20, 20))
+		end
+		local r = rng:NextNumber()
+		if r < 0.15 then
+			wear("backpack", pick(SHIRTS, rng))
+		elseif r < 0.27 then
+			wear("scarf", pick(SHIRTS, rng))
+		end
+	end
 	return rig
+end
+
+-- Деталь, привязанная к части базовой позы:
+-- bone — 1 торс, 2 голова, 4/5 руки, 6/7 ноги.
+function Rig.AddExtra(rig, name, size, bone, offset, color, material, shape)
+	local part = Outfits.MakePart({ Name = name, Size = size, Color = color, Material = material, Shape = shape })
+	part.Anchored = true
+	part.Parent = rig.Model
+	table.insert(rig.Extras, { Part = part, Bone = bone, Offset = offset })
+	table.insert(rig.List, part)
+	return part
+end
+
+-- Надевает шапку/аксессуар из каталога (shared/Outfits).
+function Rig.Wear(rig, kind, color)
+	local headRest = { CFrame = CFrame.new(0, 1.5, 0), Size = rig.Parts.Head.Size }
+	local torsoRest = { CFrame = CFrame.new(), Size = rig.Parts.Torso.Size }
+	for _, spec in Outfits.Pieces(kind, color) do
+		local onHead = spec.Anchor == "HeadTop" or spec.Anchor == "Face"
+		local boneRest = onHead and headRest.CFrame or torsoRest.CFrame
+		local offset = boneRest:Inverse() * Outfits.AnchorCFrame(spec.Anchor, headRest, torsoRest) * spec.Offset
+		Rig.AddExtra(rig, spec.Name, spec.Size, onHead and 2 or 1, offset, spec.Color, spec.Material, spec.Shape)
+	end
+	if (kind == "cap" or kind == "beanie" or kind == "ushanka" or kind == "cowboy" or kind == "tophat" or kind == "crown") then
+		rig.Parts.Hair.Transparency = 1
+	end
+end
+
+-- Одевает фигуру в вещи из Config.Clothing (для витрин и превью).
+function Rig.Dress(rig, items)
+	for _, item in items do
+		if item.Slot == "Top" then
+			for _, k in { "Torso", "LArm", "RArm" } do
+				rig.Parts[k].Color = item.Color
+				rig.Parts[k].Material = item.Material or Enum.Material.SmoothPlastic
+			end
+		elseif item.Slot == "Bottom" then
+			for _, k in { "LLeg", "RLeg" } do
+				rig.Parts[k].Color = item.Color
+				rig.Parts[k].Material = item.Material or Enum.Material.SmoothPlastic
+			end
+		else
+			Rig.Wear(rig, item.Kind, item.Color)
+		end
+	end
 end
 
 -- Возвращает CFrame для частей (порядок как в rig.List).
@@ -103,7 +191,11 @@ function Rig.Pose(rig, root, swing)
 	local armR = t * CFrame.new(1.5, 0.5, 0) * CFrame.Angles(a * 0.8, 0, 0) * CFrame.new(0, -0.5, 0)
 	local head = t * CFrame.new(0, 1.5, 0)
 	local hair = head * CFrame.new(0, 0.55, 0.05)
-	return { t, head, hair, armL, armR, hipL, hipR }
+	local out = { t, head, hair, armL, armR, hipL, hipR }
+	for _, e in rig.Extras or {} do
+		table.insert(out, out[e.Bone] * e.Offset)
+	end
+	return out
 end
 
 -- Сразу ставит фигуру в позу (для статичных NPC).
