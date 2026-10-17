@@ -10,18 +10,18 @@ const steps = [
 
 export function InstallationSteps() {
   return (
-    <section className="py-16 sm:py-20">
+    <section className="bg-ink-950 py-16 sm:py-20">
       <Container>
         <Reveal>
-          <h2 className="max-w-lg text-3xl sm:text-4xl">Как проходит установка</h2>
+          <h2 className="max-w-lg text-3xl text-white sm:text-4xl">Как проходит установка</h2>
         </Reveal>
 
         <ol className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((step, i) => (
             <Reveal key={step.title} delay={i * 80}>
               <li className="list-none">
-                <h3 className="text-lg">{step.title}</h3>
-                <p className="mt-2 text-sm text-ink-600">{step.text}</p>
+                <h3 className="text-lg text-white">{step.title}</h3>
+                <p className="mt-2 text-sm text-ink-300">{step.text}</p>
               </li>
             </Reveal>
           ))}

@@ -5,7 +5,7 @@ import { portfolio } from "@/data/portfolio";
 
 export function PortfolioPreview() {
   return (
-    <section className="bg-ink-50/60 py-16 sm:py-20">
+    <section className="py-16 sm:py-20">
       <Container>
         <Reveal className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <h2 className="max-w-lg text-3xl sm:text-4xl">Последние проекты</h2>

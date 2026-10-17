@@ -51,7 +51,7 @@
   }
 
   .card {
-    @apply rounded-card bg-ink-50 transition-[background-color] duration-200 ease-out hover:bg-ink-100;
+    @apply rounded-card bg-ink-50 transition-[background-color,transform] duration-200 ease-out hover:-translate-y-1 hover:bg-ink-100;
   }
 
   .field-label {
