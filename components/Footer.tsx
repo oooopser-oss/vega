@@ -81,7 +81,7 @@ export function Footer() {
 
           {columns.map((col) => (
             <div key={col.title}>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-white">{col.title}</h3>
+              <h3 className="text-base font-semibold text-white">{col.title}</h3>
               <ul className="mt-4 space-y-2.5">
                 {col.links.map((link) => (
                   <li key={link.href}>
@@ -95,7 +95,7 @@ export function Footer() {
           ))}
 
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-white">Контакты</h3>
+            <h3 className="text-base font-semibold text-white">Контакты</h3>
             <ul className="mt-4 space-y-2.5 text-sm text-ink-400">
               <li>
                 <a href={siteConfig.contacts.phoneHref} className="hover:text-brand-400">
@@ -113,8 +113,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 border-t border-ink-900 pt-6">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-500">Работаем в городах</p>
+        <div className="mt-14">
+          <p className="mb-3 text-sm font-medium text-ink-400">Работаем в городах</p>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-400">
             {regions.map((region) => (
               <Link key={region.slug} href={`/${region.slug}`} className="hover:text-brand-400">
@@ -124,7 +124,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col gap-2 border-t border-ink-900 pt-6 text-xs text-ink-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-2 text-[13px] text-ink-400 sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {new Date().getFullYear()} {siteConfig.legalName}. Все права защищены.
           </p>

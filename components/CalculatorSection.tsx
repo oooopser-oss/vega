@@ -9,8 +9,7 @@ export function CalculatorSection() {
       <Container>
         <Reveal>
           <SectionHeading
-            eyebrow="Онлайн-калькулятор"
-            title="Рассчитайте стоимость за 1 минуту"
+            title="Онлайн-калькулятор: стоимость за 1 минуту"
             description="Ответьте на несколько вопросов об участке и доме: покажем предварительную стоимость."
             align="center"
           />

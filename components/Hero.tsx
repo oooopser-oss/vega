@@ -4,7 +4,7 @@ import { HeroActions } from "@/components/HeroActions";
 
 export function Hero() {
   return (
-    <section className="border-b border-ink-100 bg-white pt-10 sm:pt-16">
+    <section className="bg-white pt-10 sm:pt-16">
       <Container>
         <div className="grid gap-10 pb-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-16 lg:pb-16">
           <div>

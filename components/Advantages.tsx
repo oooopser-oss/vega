@@ -28,8 +28,7 @@ export function Advantages() {
                 sizes="(min-width: 1024px) 35vw, 100vw"
                 className="object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-ink-950/80 via-ink-950/10 to-transparent" />
-              <div className="relative">
+              <div className="relative -m-7 mt-auto bg-ink-950/75 p-7">
                 <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15">
                   <Wrench size={22} weight="regular" />
                 </span>

@@ -12,7 +12,7 @@ export function ReviewsPreview() {
     <section className="py-16 sm:py-20">
       <Container>
         <Reveal className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <SectionHeading eyebrow="Отзывы" title="Что говорят клиенты" />
+          <SectionHeading title="Что говорят клиенты в отзывах" />
           <Link href="/reviews" className="btn-outline self-start sm:self-auto">
             Все отзывы
           </Link>
@@ -27,7 +27,7 @@ export function ReviewsPreview() {
                   {review.text}
                 </p>
                 <p className="mt-4 text-sm font-semibold text-ink-900">{review.name}</p>
-                <p className="text-xs text-ink-500">{review.city}</p>
+                <p className="text-[13px] text-ink-500">{review.city}</p>
               </div>
             </Reveal>
           ))}

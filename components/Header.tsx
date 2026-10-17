@@ -47,7 +47,7 @@ export function Header() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-40 h-16 border-b border-ink-100 bg-white">
+    <header className="sticky top-0 z-40 h-16 bg-white">
       <Container className="flex h-full items-center justify-between gap-4">
         <Logo />
 
@@ -101,7 +101,7 @@ export function Header() {
       </Container>
 
       {menuOpen && (
-        <div className="absolute inset-x-0 top-16 border-t border-ink-100 bg-white lg:hidden">
+        <div className="absolute inset-x-0 top-16 bg-white shadow-card-hover lg:hidden">
           <Container className="flex flex-col gap-1 py-4">
             {navLinks.map((link) => (
               <Link
@@ -116,7 +116,7 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
-            <div className="mt-3 flex flex-col gap-2 border-t border-ink-100 pt-4">
+            <div className="mt-3 flex flex-col gap-2 rounded-card bg-ink-50 p-4">
               <a href={siteConfig.contacts.phoneHref} className="text-base font-semibold text-ink-900">
                 {siteConfig.contacts.phone}
               </a>

@@ -41,7 +41,7 @@ export default function AboutPage() {
           </div>
         </div>
 
-        <div className="mt-14 grid gap-8 border-t border-ink-100 pt-10 sm:grid-cols-3">
+        <div className="mt-16 grid gap-8 rounded-card bg-ink-50 p-8 sm:grid-cols-3">
           {stats.map((stat) => (
             <div key={stat.label}>
               <p className="font-display text-3xl font-semibold text-ink-900">{stat.value}</p>

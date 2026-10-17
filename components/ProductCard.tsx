@@ -22,7 +22,7 @@ export function ProductCard({ product }: { product: Product }) {
       </Link>
 
       <div className="flex flex-1 flex-col p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">{product.type}</p>
+        <p className="text-sm font-medium text-ink-500">{product.type}</p>
         <Link href={`/catalog/${product.slug}`}>
           <h3 className="mt-1 text-lg font-semibold text-ink-900 hover:text-brand-700">{product.name}</h3>
         </Link>
@@ -30,11 +30,11 @@ export function ProductCard({ product }: { product: Product }) {
 
         <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
           <div>
-            <dt className="text-ink-400">Пользователей</dt>
+            <dt className="text-ink-500">Пользователей</dt>
             <dd className="font-semibold text-ink-800">до {product.spec.users} чел.</dd>
           </div>
           <div>
-            <dt className="text-ink-400">Производительность</dt>
+            <dt className="text-ink-500">Производительность</dt>
             <dd className="font-semibold text-ink-800">{product.spec.performance} л/сут</dd>
           </div>
         </dl>
@@ -42,7 +42,7 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="mt-4 flex items-baseline gap-2">
           <span className="font-display text-2xl font-semibold text-ink-900">{formatPrice(product.price)}</span>
           {product.oldPrice && (
-            <span className="text-sm text-ink-400 line-through">{formatPrice(product.oldPrice)}</span>
+            <span className="text-sm text-ink-500 line-through">{formatPrice(product.oldPrice)}</span>
           )}
         </div>
 

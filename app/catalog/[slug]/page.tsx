@@ -70,13 +70,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                 {formatPrice(product.price)}
               </span>
               {product.oldPrice && (
-                <span className="text-lg text-ink-400 line-through">{formatPrice(product.oldPrice)}</span>
+                <span className="text-lg text-ink-500 line-through">{formatPrice(product.oldPrice)}</span>
               )}
             </div>
 
             <ProductActions productSlug={product.slug} />
 
-            <dl className="mt-8 divide-y divide-ink-100 border-y border-ink-100">
+            <dl className="mt-8 divide-y divide-ink-100 border-y border-ink-100"> {/* taste-skill-ignore: real spec table */}
               {specRows.map((row) => (
                 <div key={row.label} className="flex justify-between py-3 text-sm">
                   <dt className="text-ink-500">{row.label}</dt>

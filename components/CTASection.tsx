@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { siteConfig } from "@/config/site";
 import { Container } from "@/components/ui/Container";
 import { Reveal } from "@/components/Reveal";
@@ -9,8 +10,16 @@ export function CTASection() {
   const { openLeadModal } = useLeadModal();
 
   return (
-    <section className="bg-ink-950 py-16 sm:py-20">
-      <Container>
+    <section className="relative overflow-hidden bg-ink-950 py-16 sm:py-20">
+      <Image
+        src="/images/evening-house.jpg"
+        alt="Частный дом вечером с освещёнными окнами"
+        fill
+        sizes="100vw"
+        className="object-cover opacity-30"
+      />
+      <div className="absolute inset-0 bg-ink-950/70" />
+      <Container className="relative">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl text-white sm:text-4xl">Готовы обсудить ваш участок?</h2>
           <p className="mt-4 text-base text-ink-300">

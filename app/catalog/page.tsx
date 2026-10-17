@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
 import { ProductCard } from "@/components/ProductCard";
+import { Reveal } from "@/components/Reveal";
 import { products } from "@/data/products";
 
 export const metadata: Metadata = {
@@ -19,8 +20,10 @@ export default function CatalogPage() {
         </p>
 
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((product) => (
-            <ProductCard key={product.slug} product={product} />
+          {products.map((product, i) => (
+            <Reveal key={product.slug} delay={(i % 3) * 80}>
+              <ProductCard product={product} />
+            </Reveal>
           ))}
         </div>
       </Container>

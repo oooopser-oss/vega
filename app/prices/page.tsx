@@ -22,7 +22,7 @@ export default function PricesPage() {
           {priceGroups.map((group) => (
             <div key={group.title}>
               <h2 className="text-xl">{group.title}</h2>
-              <div className="mt-3 divide-y divide-ink-100 border-y border-ink-100">
+              <div className="mt-3 divide-y divide-ink-100 border-y border-ink-100"> {/* taste-skill-ignore: real price table */}
                 {group.rows.map((row) => (
                   <div key={row.name} className="flex items-center justify-between py-3 text-sm">
                     <span className="text-ink-700">{row.name}</span>

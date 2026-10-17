@@ -188,7 +188,7 @@ export function ContactForm({
         {status === "loading" ? "Отправляем..." : submitLabel}
       </button>
 
-      <p className="text-center text-xs text-ink-400">
+      <p className="text-center text-[13px] text-ink-400">
         Нажимая кнопку, вы соглашаетесь на обработку персональных данных
       </p>
     </form>

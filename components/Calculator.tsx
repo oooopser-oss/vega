@@ -36,7 +36,7 @@ interface StepConfig {
 const steps: StepConfig[] = [
   {
     key: "residents",
-    question: "Сколько человек постоянно проживает в доме?",
+    question: "Сколько человек живёт в доме?",
     options: [
       { value: "1-2", label: "1-2 человека" },
       { value: "3-4", label: "3-4 человека" },
@@ -175,7 +175,7 @@ export function Calculator() {
               <div key={i} className={`h-1 flex-1 rounded-full ${i <= stepIndex ? "bg-brand-600" : "bg-ink-100"}`} />
             ))}
           </div>
-          <p className="mb-1 text-sm font-medium text-ink-400">
+          <p className="mb-1 text-sm font-medium text-ink-500">
             Шаг {stepIndex + 1} из {steps.length}
           </p>
           <h3 className="mb-6 text-2xl">{currentStep.question}</h3>
@@ -228,8 +228,7 @@ export function Calculator() {
         </>
       ) : (
         <div className="text-center">
-          <p className="eyebrow justify-center">Предварительный расчёт готов</p>
-          <h3 className="mt-3 text-3xl sm:text-4xl">Стоимость от {formatPrice(price)}</h3>
+          <h3 className="text-3xl sm:text-4xl">Предварительный расчёт: от {formatPrice(price)}</h3>
           <p className="mt-3 text-ink-600">
             Точная стоимость зависит от выбранной модели оборудования и особенностей участка. Наш специалист
             свяжется с вами и уточнит детали.

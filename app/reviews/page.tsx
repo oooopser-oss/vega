@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
 import { StarRating } from "@/components/ui/StarRating";
+import { Reveal } from "@/components/Reveal";
 import { formatDate } from "@/lib/format";
 import { reviews, getAverageRating } from "@/data/reviews";
 
@@ -22,19 +23,21 @@ export default function ReviewsPage() {
         </div>
 
         <div className="mt-10 space-y-6">
-          {reviews.map((review) => (
-            <div key={review.id} className="card p-6">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-semibold text-ink-900">{review.name}</p>
-                  <p className="text-sm text-ink-500">
-                    {review.city} · {formatDate(review.date)}
-                  </p>
+          {reviews.map((review, i) => (
+            <Reveal key={review.id} delay={(i % 4) * 60}>
+              <div className="card p-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-ink-900">{review.name}</p>
+                    <p className="text-sm text-ink-500">
+                      {review.city} · {formatDate(review.date)}
+                    </p>
+                  </div>
+                  <StarRating value={review.rating} />
                 </div>
-                <StarRating value={review.rating} />
+                <p className="mt-4 text-sm leading-relaxed text-ink-700">{review.text}</p>
               </div>
-              <p className="mt-4 text-sm leading-relaxed text-ink-700">{review.text}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </Container>

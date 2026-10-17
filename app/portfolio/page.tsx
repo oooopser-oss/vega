@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
+import { Reveal } from "@/components/Reveal";
 import { portfolio } from "@/data/portfolio";
 
 export const metadata: Metadata = {
@@ -18,15 +19,17 @@ export default function PortfolioPage() {
         </p>
 
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {portfolio.map((item) => (
-            <div key={item.slug} className="card p-6">
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-                {item.city} · {item.durationDays} {item.durationDays === 1 ? "день" : "дня"}
-              </p>
-              <h2 className="mt-2 text-lg">{item.title}</h2>
-              <p className="mt-2 text-sm text-ink-600">{item.description}</p>
-              <p className="mt-4 text-sm font-semibold text-brand-700">{item.productBrand}</p>
-            </div>
+          {portfolio.map((item, i) => (
+            <Reveal key={item.slug} delay={(i % 3) * 80}>
+              <div className="card p-6">
+                <p className="text-sm font-medium text-ink-500">
+                  {item.city} · {item.durationDays} {item.durationDays === 1 ? "день" : "дня"}
+                </p>
+                <h2 className="mt-2 text-lg">{item.title}</h2>
+                <p className="mt-2 text-sm text-ink-600">{item.description}</p>
+                <p className="mt-4 text-sm font-semibold text-brand-700">{item.productBrand}</p>
+              </div>
+            </Reveal>
           ))}
         </div>
       </Container>

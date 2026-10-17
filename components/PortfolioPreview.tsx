@@ -21,7 +21,7 @@ export function PortfolioPreview() {
               href="/portfolio"
               className="card w-[280px] shrink-0 snap-start p-6"
             >
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
+              <p className="text-sm font-medium text-ink-500">
                 {item.city} · {item.durationDays} {item.durationDays === 1 ? "день" : "дня"}
               </p>
               <h3 className="mt-2 text-base">{item.title}</h3>
