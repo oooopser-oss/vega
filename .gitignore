@@ -6,3 +6,9 @@ build
 next-env.d.ts
 .env*.local
 .DS_Store
+
+# Locally installed agent skill tooling (not site source)
+.agents
+.claude
+skills-lock.json
+.taste-skill
