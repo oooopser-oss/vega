@@ -25,6 +25,8 @@ local World = {
 	CarSpawns = {},
 	Desks = {},
 	Workers = {}, -- сотрудники-NPC: { CFrame, Role, Name, Lines }
+	Activities = {}, -- точки занятий: { Part, Activity, Text, Hold }
+	ShopPoints = {}, -- магазины с несколькими точками (киоски): [shopId] = { Part, ... }
 }
 WorldBuilder.World = World
 
@@ -914,7 +916,9 @@ local function buildPark(a)
 	for _ = 1, 22 do
 		local x = cx + math.random(-75, 75)
 		local z = cz + math.random(-75, 75)
-		if math.abs(x - cx) > 15 and math.abs(z - cz) > 15 and (Vector2.new(x - cx, z - cz)).Magnitude > 20 then
+		-- Не сажаем деревья на дорожки, центр и тир (cx + 45, cz + 58).
+		local nearTir = math.abs(x - cx - 45) < 16 and math.abs(z - cz - 58) < 16
+		if math.abs(x - cx) > 15 and math.abs(z - cz) > 15 and (Vector2.new(x - cx, z - cz)).Magnitude > 20 and not nearTir then
 			tree(Vector3.new(x, 0, z))
 		end
 	end
@@ -964,6 +968,402 @@ local function buildNature()
 	end
 	for _, l in Meta.Landmarks do
 		addGPS(l.Name, Vector3.new(l.X, 3, l.Z))
+	end
+end
+
+---------------------------------------------------------------------------
+-- Секции, учёба, досуг и детали дворов
+---------------------------------------------------------------------------
+local TrafficCar = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("TrafficCar"))
+
+local function activity(part, key, text, hold)
+	table.insert(World.Activities, { Part = part, Activity = key, Text = text, Hold = hold or 0.3 })
+end
+
+local WHITE_LINE = Color3.fromRGB(245, 245, 245)
+
+-- Центральный стадион: поле с разметкой и воротами, беговая дорожка,
+-- трибуны, прожекторы, табло, мяч.
+local function buildStadium(a)
+	local m = Instance.new("Model")
+	m.Name = "Stadium"
+	m.Parent = City
+	local base = CFrame.new(a.X, 0, a.Z) * CFrame.Angles(0, math.rad(a.Yaw), 0)
+	local function at(x, y, z)
+		return base * CFrame.new(x, y, z)
+	end
+	local FW, FD = 120, 76 -- поле
+	-- Газон полосами.
+	for i = 0, 9 do
+		part({ Parent = m, Name = "Pitch", Size = Vector3.new(12, 0.3, FD), CFrame = at(-FW / 2 + 6 + i * 12, 0.15, 0), Color = i % 2 == 0 and Color3.fromRGB(70, 150, 60) or Color3.fromRGB(85, 165, 70), Material = Enum.Material.Grass })
+	end
+	local function line(x, z, sx, sz)
+		part({ Parent = m, Name = "Line", Size = Vector3.new(sx, 0.05, sz), CFrame = at(x, 0.33, z), Color = WHITE_LINE, CanCollide = false })
+	end
+	line(0, -FD / 2, FW, 0.6)
+	line(0, FD / 2, FW, 0.6)
+	line(-FW / 2, 0, 0.6, FD)
+	line(FW / 2, 0, 0.6, FD)
+	line(0, 0, 0.6, FD)
+	for _, sgn in { -1, 1 } do
+		line(sgn * (FW / 2 - 14), 0, 0.6, 34)
+		line(sgn * (FW / 2 - 7), -17, 14, 0.6)
+		line(sgn * (FW / 2 - 7), 17, 14, 0.6)
+	end
+	part({ Parent = m, Name = "CenterCircle", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.04, 20, 20), CFrame = at(0, 0.32, 0) * CFrame.Angles(0, 0, math.rad(90)), Color = WHITE_LINE, CanCollide = false })
+	part({ Parent = m, Name = "CenterInner", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.05, 18.8, 18.8), CFrame = at(0, 0.33, 0) * CFrame.Angles(0, 0, math.rad(90)), Color = Color3.fromRGB(85, 165, 70), Material = Enum.Material.Grass, CanCollide = false })
+	-- Ворота.
+	local goals = {}
+	for _, sgn in { -1, 1 } do
+		local gx = sgn * (FW / 2 + 2)
+		for _, gz in { -9, 9 } do
+			part({ Parent = m, Name = "GoalPost", Size = Vector3.new(0.6, 8, 0.6), CFrame = at(gx, 4, gz), Color = WHITE_LINE, Material = Enum.Material.Metal })
+		end
+		part({ Parent = m, Name = "Crossbar", Size = Vector3.new(0.6, 0.6, 18.6), CFrame = at(gx, 8, 0), Color = WHITE_LINE, Material = Enum.Material.Metal })
+		part({ Parent = m, Name = "Net", Size = Vector3.new(0.2, 8, 18), CFrame = at(gx + sgn * 4, 4, 0), Color = Color3.fromRGB(230, 230, 230), Transparency = 0.6, Material = Enum.Material.Fabric })
+		for _, gz in { -9, 9 } do
+			part({ Parent = m, Name = "NetSide", Size = Vector3.new(4, 8, 0.2), CFrame = at(gx + sgn * 2, 4, gz), Color = Color3.fromRGB(230, 230, 230), Transparency = 0.6, Material = Enum.Material.Fabric })
+		end
+		part({ Parent = m, Name = "NetTop", Size = Vector3.new(4, 0.2, 18), CFrame = at(gx + sgn * 2, 8, 0), Color = Color3.fromRGB(230, 230, 230), Transparency = 0.6, Material = Enum.Material.Fabric })
+		table.insert(goals, { Side = sgn, Center = at(gx + sgn * 2, 4, 0).Position })
+	end
+	-- Беговая дорожка вокруг поля (4 прямых участка и закругления).
+	local TW = 10
+	local ix, iz = FW / 2 + 10, FD / 2 + 8
+	local track = Color3.fromRGB(175, 70, 50)
+	part({ Parent = m, Name = "Track", Size = Vector3.new(2 * ix, 0.25, TW), CFrame = at(0, 0.13, -iz - TW / 2), Color = track, Material = Enum.Material.Slate })
+	part({ Parent = m, Name = "Track", Size = Vector3.new(2 * ix, 0.25, TW), CFrame = at(0, 0.13, iz + TW / 2), Color = track, Material = Enum.Material.Slate })
+	part({ Parent = m, Name = "Track", Size = Vector3.new(TW, 0.25, 2 * iz + 2 * TW), CFrame = at(-ix - TW / 2, 0.13, 0), Color = track, Material = Enum.Material.Slate })
+	part({ Parent = m, Name = "Track", Size = Vector3.new(TW, 0.25, 2 * iz + 2 * TW), CFrame = at(ix + TW / 2, 0.13, 0), Color = track, Material = Enum.Material.Slate })
+	for lane = 1, 3 do
+		local off = lane * TW / 4
+		line(0, -iz - off, 2 * ix, 0.25)
+		line(0, iz + off, 2 * ix, 0.25)
+	end
+	line(-ix + 6, iz + TW / 2, 0.8, TW) -- старт/финиш
+	World.TrackPoints = {}
+	local r = TW / 2
+	for _, p in { { -ix + 6, iz + r }, { ix + r, iz + r }, { ix + r, 0 }, { ix + r, -iz - r }, { 0, -iz - r }, { -ix - r, -iz - r }, { -ix - r, 0 }, { -ix - r, iz + r }, { -ix + 6, iz + r } } do
+		table.insert(World.TrackPoints, at(p[1], 3, p[2]).Position)
+	end
+	local start = interactable(m, "RunStart", at(-ix + 2, 2.5, iz + TW + 3), Vector3.new(2, 5, 2), Color3.fromRGB(240, 200, 40), "Старт забега", Enum.Material.Metal)
+	activity(start, "run", "Начать забег")
+	-- Трибуны вдоль длинных сторон.
+	for _, sgn in { -1, 1 } do
+		for step = 0, 4 do
+			local z = sgn * (iz + TW + 6 + step * 3)
+			part({ Parent = m, Name = "Stand", Size = Vector3.new(110, 1.5 + step * 1.5, 3), CFrame = at(0, (1.5 + step * 1.5) / 2, z), Color = Color3.fromRGB(170, 170, 175), Material = Enum.Material.Concrete })
+			for sx = -50, 50, 4 do
+				part({ Parent = m, Name = "Seat", Size = Vector3.new(2.6, 0.6, 1.6), CFrame = at(sx, 1.5 + step * 1.5 + 0.3, z), Color = (step % 2 == 0) and Color3.fromRGB(40, 90, 180) or Color3.fromRGB(240, 240, 240), CanCollide = false })
+			end
+		end
+	end
+	part({ Parent = m, Name = "StandRoof", Size = Vector3.new(112, 0.8, 18), CFrame = at(0, 16, -(iz + TW + 12)), Color = Color3.fromRGB(60, 120, 180), Material = Enum.Material.Metal })
+	for sx = -50, 50, 25 do
+		part({ Parent = m, Name = "RoofPost", Size = Vector3.new(0.8, 16, 0.8), CFrame = at(sx, 8, -(iz + TW + 20)), Color = Color3.fromRGB(80, 80, 85), Material = Enum.Material.Metal })
+	end
+	-- Прожекторы по углам.
+	for _, c in { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } } do
+		local x, z = c[1] * (ix + TW + 8), c[2] * (iz + TW + 22)
+		part({ Parent = m, Name = "LightTower", Size = Vector3.new(1.4, 40, 1.4), CFrame = at(x, 20, z), Color = Color3.fromRGB(90, 90, 95), Material = Enum.Material.Metal })
+		local lamp = part({ Parent = m, Name = "Floodlight", Size = Vector3.new(6, 3, 1), CFrame = CFrame.lookAt(at(x, 40, z).Position, at(0, 0, 0).Position), Color = Color3.fromRGB(255, 250, 230), Material = Enum.Material.Neon })
+		local spot = Instance.new("SpotLight")
+		spot.Range = 60
+		spot.Angle = 70
+		spot.Brightness = 2
+		spot.Face = Enum.NormalId.Front
+		spot.Parent = lamp
+	end
+	-- Табло со счётом и рекордом забега.
+	local board = part({ Parent = m, Name = "Scoreboard", Size = Vector3.new(30, 10, 1), CFrame = at(-(ix + TW + 12), 12, 0) * CFrame.Angles(0, math.rad(-90), 0), Color = Color3.fromRGB(20, 20, 25) })
+	part({ Parent = m, Name = "BoardLeg", Size = Vector3.new(1, 8, 1), CFrame = at(-(ix + TW + 12), 4, -8), Color = Color3.fromRGB(80, 80, 85) })
+	part({ Parent = m, Name = "BoardLeg", Size = Vector3.new(1, 8, 1), CFrame = at(-(ix + TW + 12), 4, 8), Color = Color3.fromRGB(80, 80, 85) })
+	local scoreLabel = surfaceText(board, Enum.NormalId.Front, "КРАСНЫЕ 0 : 0 СИНИЕ", Color3.fromRGB(20, 20, 25), Color3.fromRGB(255, 220, 80))
+	local recordBoard = part({ Parent = m, Name = "RecordBoard", Size = Vector3.new(14, 5, 0.5), CFrame = at(-ix + 2, 5, iz + TW + 6), Color = Color3.fromRGB(20, 20, 25), CanCollide = false })
+	local recordLabel = surfaceText(recordBoard, Enum.NormalId.Back, "Рекорд забега: —", Color3.fromRGB(20, 20, 25), Color3.fromRGB(120, 255, 140))
+	-- Мяч.
+	local ball = Instance.new("Part")
+	ball.Name = "Football"
+	ball.Shape = Enum.PartType.Ball
+	ball.Size = Vector3.new(3, 3, 3)
+	ball.Color = Color3.fromRGB(250, 250, 250)
+	ball.Material = Enum.Material.SmoothPlastic
+	ball.CustomPhysicalProperties = PhysicalProperties.new(0.3, 0.4, 0.6, 1, 1)
+	ball.CFrame = at(0, 3, 0)
+	ball.Parent = m
+	World.Football = { Ball = ball, Center = at(0, 3, 0), Base = base, HalfW = FW / 2, GoalHalf = 9, Goals = goals, ScoreLabel = scoreLabel }
+	World.RunBoard = recordLabel
+	worker(at(-ix + 6, 0.4, iz + TW + 8), "coach", "Тренер по лёгкой атлетике", { "Беги круг на время — рекорд попадёт на табло!", "Выносливость даёт скорость и бережёт силы." })
+	addGPS("Центральный стадион", at(0, 3, iz + TW + 10))
+end
+
+local function buildSports(a)
+	local m, at = building({ Name = "SportsComplex", GPSName = "Спорткомплекс «КОСМОС»", X = a.X, Z = a.Z, Yaw = a.Yaw, W = 80, D = 60, H = 18, Color = Color3.fromRGB(70, 110, 170), Material = Enum.Material.Concrete, Sign = "СПОРТКОМПЛЕКС «КОСМОС»", SignColor = Color3.fromRGB(30, 60, 120), Path = 40, DoorW = 12 })
+	part({ Parent = m, Name = "Mats", Size = Vector3.new(34, 0.1, 40), CFrame = at(-18, 0.45, -4), Color = Color3.fromRGB(50, 80, 150), Material = Enum.Material.Fabric, CanCollide = false })
+	part({ Parent = m, Name = "Mirror", Size = Vector3.new(34, 10, 0.2), CFrame = at(-18, 6, -28.8), Color = Color3.fromRGB(200, 220, 235), Material = Enum.Material.Glass, Reflectance = 0.4, CanCollide = false })
+	-- Тренажёры.
+	for i, lx in { -30, -18, -6 } do
+		local benchPart = interactable(m, "GymMachine" .. i, at(lx, 1.6, -16), Vector3.new(3, 1.2, 7), Color3.fromRGB(40, 40, 45), "Тренажёр", Enum.Material.Leather)
+		for _, sx in { -3.5, 3.5 } do
+			part({ Parent = m, Name = "Rack", Size = Vector3.new(0.5, 6, 0.5), CFrame = at(lx + sx, 3.4, -19), Color = Color3.fromRGB(120, 120, 130), Material = Enum.Material.Metal })
+		end
+		part({ Parent = m, Name = "Bar", Shape = Enum.PartType.Cylinder, Size = Vector3.new(9, 0.4, 0.4), CFrame = at(lx, 5.2, -19), Color = Color3.fromRGB(180, 180, 190), Material = Enum.Material.Metal })
+		for _, sx in { -4, 4 } do
+			part({ Parent = m, Name = "Weight", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.6, 2.4, 2.4), CFrame = at(lx + sx, 5.2, -19), Color = Color3.fromRGB(30, 30, 30), Material = Enum.Material.Metal })
+		end
+		activity(benchPart, "gym", "Тренироваться (15$)")
+	end
+	for i, lx in { -30, -18 } do
+		local tm = part({ Parent = m, Name = "Treadmill", Size = Vector3.new(3, 1, 7), CFrame = at(lx, 0.9, 8), Color = Color3.fromRGB(50, 50, 55), Material = Enum.Material.Metal })
+		part({ Parent = m, Name = "TreadmillPanel", Size = Vector3.new(3, 4, 0.4), CFrame = at(lx, 3, 4.5), Color = Color3.fromRGB(30, 30, 35) })
+		activity(tm, "gym", "Пробежка (15$)")
+	end
+	-- Боксёрский ринг и груши.
+	part({ Parent = m, Name = "Ring", Size = Vector3.new(22, 1.6, 22), CFrame = at(20, 1.2, -10), Color = Color3.fromRGB(220, 220, 225), Material = Enum.Material.Fabric })
+	for _, c in { { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 } } do
+		part({ Parent = m, Name = "RingPost", Size = Vector3.new(0.8, 5, 0.8), CFrame = at(20 + c[1] * 10.6, 4.4, -10 + c[2] * 10.6), Color = Color3.fromRGB(200, 40, 40), Material = Enum.Material.Metal })
+	end
+	for h = 3.4, 5.4, 1 do
+		for _, side in { -1, 1 } do
+			part({ Parent = m, Name = "Rope", Size = Vector3.new(21.2, 0.2, 0.2), CFrame = at(20, h, -10 + side * 10.6), Color = Color3.fromRGB(240, 240, 240), CanCollide = false })
+			part({ Parent = m, Name = "Rope", Size = Vector3.new(0.2, 0.2, 21.2), CFrame = at(20 + side * 10.6, h, -10), Color = Color3.fromRGB(240, 240, 240), CanCollide = false })
+		end
+	end
+	for i, lx in { 12, 24 } do
+		local bag = part({ Parent = m, Name = "PunchingBag" .. i, Shape = Enum.PartType.Cylinder, Size = Vector3.new(5, 2.4, 2.4), CFrame = at(lx, 5, 12) * CFrame.Angles(0, 0, math.rad(90)), Color = Color3.fromRGB(170, 30, 30), Material = Enum.Material.Leather })
+		part({ Parent = m, Name = "Chain", Size = Vector3.new(0.2, 9, 0.2), CFrame = at(lx, 12, 12), Color = Color3.fromRGB(120, 120, 125), Material = Enum.Material.Metal })
+		activity(bag, "boxing", "Бокс (20$)")
+	end
+	local shop = interactable(m, "SportsShop", at(30, 2, 24), Vector3.new(10, 4, 3), Color3.fromRGB(70, 110, 170), "Спорттовары")
+	World.Shops.Sports = shop
+	staff(at, 30, 21.5, "coach", "Тренер", { "Тренажёры качают силу, груши — бокс.", "Для спецслужб нужны сила и выносливость 2 уровня!" })
+end
+
+local function buildSchool(a)
+	local m, at = building({ Name = "School", GPSName = "Лицей №21 и колледж", X = a.X, Z = a.Z, Yaw = a.Yaw, W = 100, D = 70, H = 22, Color = Color3.fromRGB(230, 205, 160), Material = Enum.Material.Brick, Sign = "ЛИЦЕЙ №21", SignColor = Color3.fromRGB(150, 50, 40), Path = 44, DoorW = 12 })
+	-- Перегородка: слева — лицей, справа — колледж.
+	part({ Parent = m, Name = "Partition", Size = Vector3.new(1, 22, 40), CFrame = at(0, 11, -15), Color = Color3.fromRGB(230, 205, 160), Material = Enum.Material.Plaster })
+	local function classroom(cx, title, key, actionText, teacherName, lines)
+		local board = part({ Parent = m, Name = "Chalkboard", Size = Vector3.new(24, 7, 0.4), CFrame = at(cx, 7, -34.2), Color = Color3.fromRGB(30, 70, 50) })
+		surfaceText(board, Enum.NormalId.Back, title, Color3.fromRGB(30, 70, 50), Color3.fromRGB(240, 240, 230))
+		part({ Parent = m, Name = "TeacherDesk", Size = Vector3.new(8, 3, 3.5), CFrame = at(cx, 1.9, -27), Color = Color3.fromRGB(130, 90, 55), Material = Enum.Material.Wood })
+		local first
+		for row = 0, 3 do
+			for col = -1, 1 do
+				local d = part({ Parent = m, Name = "Desk", Size = Vector3.new(5, 2.8, 2.5), CFrame = at(cx + col * 8, 1.8, -18 + row * 7), Color = Color3.fromRGB(200, 170, 120), Material = Enum.Material.Wood })
+				part({ Parent = m, Name = "Chair", Size = Vector3.new(2.4, 1.8, 2.2), CFrame = at(cx + col * 8, 1.3, -15.5 + row * 7), Color = Color3.fromRGB(60, 90, 150), Material = Enum.Material.SmoothPlastic })
+				first = first or d
+				if row == 3 then
+					activity(d, key, actionText)
+				end
+			end
+		end
+		staff(at, cx, -30, "teacher", teacherName, lines)
+	end
+	classroom(-25, "ЛИЦЕЙ: УРОК", "lesson", "Пойти на урок", "Учитель", { "5 уроков — и аттестат ваш!", "С аттестатом берут на работу в офис." })
+	classroom(25, "КОЛЛЕДЖ: ЛЕКЦИЯ", "college", "Лекция (100$)", "Преподаватель колледжа", { "Диплом колледжа даёт +15% к любой зарплате.", "Сначала получите аттестат в лицее." })
+	-- Школьный двор: флагшток, баскетбольные кольца, забор.
+	part({ Parent = m, Name = "Flagpole", Size = Vector3.new(0.5, 24, 0.5), CFrame = at(-30, 12, 50), Color = Color3.fromRGB(200, 200, 205), Material = Enum.Material.Metal })
+	for i, c in { Color3.fromRGB(255, 255, 255), Color3.fromRGB(30, 60, 170), Color3.fromRGB(210, 30, 40) } do
+		part({ Parent = m, Name = "Flag", Size = Vector3.new(6, 1.3, 0.1), CFrame = at(-26.8, 23.2 - i * 1.3, 50), Color = c, Material = Enum.Material.Fabric, CanCollide = false })
+	end
+	for _, lx in { 18, 42 } do
+		part({ Parent = m, Name = "HoopPole", Size = Vector3.new(0.6, 12, 0.6), CFrame = at(lx, 6, 56), Color = Color3.fromRGB(90, 90, 95), Material = Enum.Material.Metal })
+		part({ Parent = m, Name = "Backboard", Size = Vector3.new(6, 4, 0.3), CFrame = at(lx, 12, 55.5), Color = Color3.new(1, 1, 1) })
+		part({ Parent = m, Name = "Hoop", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.2, 2.2, 2.2), CFrame = at(lx, 10.5, 54) * CFrame.Angles(0, 0, math.rad(90)), Color = Color3.fromRGB(240, 100, 30), Material = Enum.Material.Metal, CanCollide = false })
+	end
+	part({ Parent = m, Name = "Court", Size = Vector3.new(36, 0.2, 18), CFrame = at(30, 0.1, 52), Color = Color3.fromRGB(190, 110, 70), Material = Enum.Material.Concrete })
+end
+
+local function buildCulture(a)
+	local m, at = building({ Name = "Culture", GPSName = "Дом культуры и библиотека", X = a.X, Z = a.Z, Yaw = a.Yaw, W = 80, D = 60, H = 20, Color = Color3.fromRGB(235, 225, 210), Material = Enum.Material.Marble, Sign = "ДОМ КУЛЬТУРЫ • БИБЛИОТЕКА", SignColor = Color3.fromRGB(110, 60, 120), Path = 40, DoorW = 12 })
+	-- Сцена и музыкальный класс.
+	part({ Parent = m, Name = "Stage", Size = Vector3.new(30, 2, 12), CFrame = at(-20, 1.2, -22), Color = Color3.fromRGB(110, 70, 45), Material = Enum.Material.WoodPlanks })
+	part({ Parent = m, Name = "Curtain", Size = Vector3.new(32, 14, 0.4), CFrame = at(-20, 8, -28.5), Color = Color3.fromRGB(150, 20, 40), Material = Enum.Material.Fabric })
+	part({ Parent = m, Name = "Piano", Size = Vector3.new(6, 4, 3), CFrame = at(-30, 4.2, -22), Color = Color3.fromRGB(15, 15, 18), Material = Enum.Material.SmoothPlastic })
+	part({ Parent = m, Name = "Keys", Size = Vector3.new(5.6, 0.2, 1), CFrame = at(-30, 6.3, -20.6), Color = Color3.new(1, 1, 1), CanCollide = false })
+	for i, lx in { -20, -12 } do
+		local stand = interactable(m, "GuitarStand" .. i, at(lx, 3.5, -20), Vector3.new(1.4, 3, 1), Color3.fromRGB(190, 120, 50), "Гитара", Enum.Material.Wood)
+		activity(stand, "guitar", "Урок гитары (10$)")
+	end
+	-- Шахматный клуб: доски в клетку.
+	for i, lx in { 8, 20 } do
+		local tbl = part({ Parent = m, Name = "ChessTable", Size = Vector3.new(5, 3, 5), CFrame = at(lx, 1.9, -18), Color = Color3.fromRGB(120, 80, 50), Material = Enum.Material.Wood })
+		for x = 0, 3 do
+			for z = 0, 3 do
+				part({ Parent = m, Name = "Cell", Size = Vector3.new(1, 0.06, 1), CFrame = at(lx - 1.5 + x, 3.43, -19.5 + z), Color = ((x + z) % 2 == 0) and Color3.fromRGB(240, 230, 210) or Color3.fromRGB(70, 45, 30), CanCollide = false })
+			end
+		end
+		activity(tbl, "chess", "Шахматный кружок")
+	end
+	-- Библиотека: стеллажи с книгами.
+	for i = 0, 3 do
+		local x = 8 + i * 8
+		part({ Parent = m, Name = "Bookshelf", Size = Vector3.new(6, 9, 2), CFrame = at(x, 4.9, 6), Color = Color3.fromRGB(110, 75, 45), Material = Enum.Material.Wood })
+		for shelf = 0, 2 do
+			part({ Parent = m, Name = "Books", Size = Vector3.new(5.6, 1.8, 2.1), CFrame = at(x, 2.2 + shelf * 2.8, 6), Color = ({ Color3.fromRGB(170, 50, 50), Color3.fromRGB(50, 90, 160), Color3.fromRGB(60, 130, 70) })[shelf + 1], CanCollide = false })
+		end
+	end
+	local shop = interactable(m, "CultureShop", at(-28, 2, 20), Vector3.new(10, 4, 3), Color3.fromRGB(110, 60, 120), "Лавка: книги, гитары")
+	World.Shops.Culture = shop
+	staff(at, -28, 17.5, "teacher", "Библиотекарь", { "Книга поднимает настроение.", "Гитару можно купить здесь — и играть на улице!" })
+	worker(at(-16, 2.4, -24) * CFrame.Angles(0, math.rad(180), 0), "teacher", "Учитель музыки", { "Попадайте в ритм: клавиши D, F, J, K.", "С уровнем музыки растут чаевые." })
+end
+
+local function buildDrivingSchool(a)
+	local m, at = building({ Name = "DrivingSchool", GPSName = "Автошкола", X = a.X, Z = a.Z, Yaw = a.Yaw, W = 60, D = 40, H = 14, Color = Color3.fromRGB(240, 240, 240), Material = Enum.Material.Concrete, Sign = "АВТОШКОЛА «ПРАВА»", SignColor = Color3.fromRGB(30, 110, 60), Path = 10, DoorW = 10 })
+	local screen = part({ Parent = m, Name = "Screen", Size = Vector3.new(14, 7, 0.3), CFrame = at(0, 7, -19), Color = Color3.fromRGB(20, 20, 25) })
+	surfaceText(screen, Enum.NormalId.Back, "ПДД: ТЕОРИЯ", Color3.fromRGB(20, 40, 90), Color3.new(1, 1, 1))
+	for row = 0, 1 do
+		for col = -1, 1 do
+			local d = part({ Parent = m, Name = "Desk", Size = Vector3.new(5, 2.8, 2.5), CFrame = at(col * 8, 1.8, -10 + row * 7), Color = Color3.fromRGB(200, 170, 120), Material = Enum.Material.Wood })
+			if row == 1 and col == 0 then
+				activity(d, "theory", "Экзамен по ПДД (300$)")
+			end
+		end
+	end
+	staff(at, 0, -15, "clerk", "Инструктор", { "Сначала теория, потом вождение по городу.", "Без прав купить машину нельзя!" })
+	-- Площадка с конусами и учебной машиной.
+	part({ Parent = m, Name = "Pad", Size = Vector3.new(40, 0.3, 24), CFrame = at(0, 0.15, 34), Color = Color3.fromRGB(70, 70, 75), Material = Enum.Material.Asphalt })
+	for i = -3, 3 do
+		part({ Parent = m, Name = "Cone", Size = Vector3.new(1, 1.6, 1), CFrame = at(i * 5, 1, 44), Color = Color3.fromRGB(255, 120, 20) })
+	end
+	World.DrivingPad = at(0, 3, 34) * CFrame.Angles(0, math.rad(180), 0)
+	local kiosk = interactable(m, "ExamKiosk", at(16, 2.5, 26), Vector3.new(2, 5, 2), Color3.fromRGB(30, 110, 60), "Практический экзамен", Enum.Material.Metal)
+	activity(kiosk, "drive", "Практический экзамен")
+end
+
+local function buildShootingGallery()
+	local pa = Meta.Anchors.Park
+	local base = CFrame.new(pa.X + 45, 0, pa.Z + 58)
+	local function at(x, y, z)
+		return base * CFrame.new(x, y, z)
+	end
+	part({ Name = "TirFloor", Size = Vector3.new(16, 0.4, 14), CFrame = at(0, 0.2, 0), Color = Color3.fromRGB(150, 110, 70), Material = Enum.Material.WoodPlanks })
+	part({ Name = "TirBack", Size = Vector3.new(16, 10, 0.6), CFrame = at(0, 5, -7), Color = Color3.fromRGB(60, 40, 30), Material = Enum.Material.Wood })
+	part({ Name = "TirRoof", Size = Vector3.new(17, 0.6, 15), CFrame = at(0, 10.3, 0), Color = Color3.fromRGB(200, 40, 40), Material = Enum.Material.Fabric })
+	for i = -2, 2 do
+		part({ Name = "Target", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.2, 2.2, 2.2), CFrame = at(i * 3, 5.5, -6.6) * CFrame.Angles(0, math.rad(90), 0), Color = Color3.new(1, 1, 1), CanCollide = false })
+		part({ Name = "TargetCenter", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.25, 1, 1), CFrame = at(i * 3, 5.5, -6.55) * CFrame.Angles(0, math.rad(90), 0), Color = Color3.fromRGB(220, 30, 30), CanCollide = false })
+	end
+	local counterPart = interactable(nil, "TirCounter", at(0, 2, 4), Vector3.new(14, 3.5, 2), Color3.fromRGB(120, 80, 50), "Тир", Enum.Material.Wood)
+	activity(counterPart, "shooting", "Стрелять (10$)")
+	addGPS("Тир в парке", at(0, 3, 10))
+end
+
+local function buildFishing()
+	for i, f in Meta.FishingSpots or {} do
+		local base = CFrame.new(f.X, 0, f.Z) * CFrame.Angles(0, math.rad(f.Yaw), 0)
+		part({ Name = "Pier", Size = Vector3.new(6, 0.6, 16), CFrame = base * CFrame.new(0, 0.7, -6), Color = Color3.fromRGB(130, 95, 60), Material = Enum.Material.WoodPlanks })
+		for _, c in { { -2.6, -12 }, { 2.6, -12 }, { -2.6, -2 }, { 2.6, -2 } } do
+			part({ Name = "PierLeg", Size = Vector3.new(0.6, 3, 0.6), CFrame = base * CFrame.new(c[1], -0.5, c[2]), Color = Color3.fromRGB(90, 65, 40), Material = Enum.Material.Wood })
+		end
+		local spot = interactable(nil, "FishingSpot", base * CFrame.new(0, 1.6, -12.5), Vector3.new(4, 0.4, 2), Color3.fromRGB(140, 100, 65), "Рыбалка", Enum.Material.WoodPlanks)
+		spot.Transparency = 0.2
+		activity(spot, "fishing", "Рыбачить (нужна удочка)")
+		part({ Name = "Bucket", Shape = Enum.PartType.Cylinder, Size = Vector3.new(1.4, 1.2, 1.2), CFrame = base * CFrame.new(2, 1.7, -9) * CFrame.Angles(0, 0, math.rad(90)), Color = Color3.fromRGB(80, 120, 170), Material = Enum.Material.Metal })
+		if i == 1 then
+			addGPS("Рыбалка (Нижнешайтанский пруд)", base * CFrame.new(0, 3, 2))
+		end
+	end
+end
+
+local function buildPlaygrounds()
+	for _, pg in Meta.Playgrounds or {} do
+		local base = CFrame.new(pg.X, 0, pg.Z) * CFrame.Angles(0, math.rad(pg.Yaw), 0)
+		local function at(x, y, z)
+			return base * CFrame.new(x, y, z)
+		end
+		part({ Name = "PlayFloor", Size = Vector3.new(34, 0.25, 30), CFrame = at(0, 0.12, 0), Color = Color3.fromRGB(80, 160, 90), Material = Enum.Material.Fabric })
+		-- Горка.
+		part({ Name = "SlideTower", Size = Vector3.new(5, 7, 5), CFrame = at(-10, 3.5, -6), Color = Color3.fromRGB(240, 180, 40), Material = Enum.Material.SmoothPlastic })
+		part({ ClassName = "WedgePart", Name = "Slide", Size = Vector3.new(3, 7, 10), CFrame = at(-10, 3.5, 3.5) * CFrame.Angles(0, math.rad(180), 0), Color = Color3.fromRGB(220, 50, 50), Material = Enum.Material.SmoothPlastic })
+		part({ Name = "SlideRoof", Size = Vector3.new(6, 0.5, 6), CFrame = at(-10, 10.5, -6), Color = Color3.fromRGB(50, 120, 200) })
+		-- Качели.
+		part({ Name = "SwingBar", Size = Vector3.new(12, 0.6, 0.6), CFrame = at(8, 9, -6), Color = Color3.fromRGB(60, 120, 200), Material = Enum.Material.Metal })
+		for _, x in { 2.5, 13.5 } do
+			part({ Name = "SwingLeg", Size = Vector3.new(0.6, 9, 0.6), CFrame = at(x, 4.5, -6), Color = Color3.fromRGB(60, 120, 200), Material = Enum.Material.Metal })
+		end
+		local seat
+		for _, x in { 5.5, 10.5 } do
+			seat = part({ Name = "SwingSeat", Size = Vector3.new(2.4, 0.4, 1.4), CFrame = at(x, 2.4, -6), Color = Color3.fromRGB(240, 200, 60), Material = Enum.Material.Wood })
+			for _, dx in { -1, 1 } do
+				part({ Name = "SwingRope", Size = Vector3.new(0.15, 6.4, 0.15), CFrame = at(x + dx, 5.8, -6), Color = Color3.fromRGB(60, 60, 60), CanCollide = false })
+			end
+		end
+		table.insert(World.FunSpots, { Part = seat, Need = "Fun", Amount = 12, Text = "Покачаться", Hold = 1, Cooldown = 12 })
+		-- Песочница и карусель.
+		part({ Name = "Sandbox", Size = Vector3.new(9, 1, 9), CFrame = at(8, 0.5, 8), Color = Color3.fromRGB(130, 90, 55), Material = Enum.Material.Wood })
+		part({ Name = "Sand", Size = Vector3.new(8, 1.05, 8), CFrame = at(8, 0.55, 8), Color = Color3.fromRGB(230, 205, 140), Material = Enum.Material.Sand })
+		part({ Name = "Carousel", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.6, 7, 7), CFrame = at(-8, 1, 9) * CFrame.Angles(0, 0, math.rad(90)), Color = Color3.fromRGB(220, 60, 160), Material = Enum.Material.Metal })
+		part({ Name = "CarouselPole", Size = Vector3.new(0.5, 3, 0.5), CFrame = at(-8, 2.5, 9), Color = Color3.fromRGB(200, 200, 205), Material = Enum.Material.Metal })
+		bench(at(0, 0, 14) * CFrame.Angles(0, math.rad(180), 0), -1)
+	end
+end
+
+local function buildParkedCars()
+	local folder = Instance.new("Folder")
+	folder.Name = "ParkedCars"
+	folder.Parent = City
+	for i, pc in Meta.ParkedCars or {} do
+		if i % 3 ~= 0 then -- каждая третья точка остаётся свободной
+			local car = TrafficCar.Build(i * 977)
+			if car.Kind ~= "bus" then
+				local root = CFrame.new(pc.X, 0.2, pc.Z) * CFrame.Angles(0, math.rad(pc.Yaw), 0)
+				for j, cf in TrafficCar.CFrames(car, root) do
+					car.List[j].CFrame = cf
+					car.List[j].CanCollide = true
+				end
+				car.Model.Name = "ParkedCar"
+				car.Model.Parent = folder
+			else
+				car.Model:Destroy()
+			end
+		end
+		maybeYield()
+	end
+end
+
+local KIOSKS = {
+	{ Name = "ШАУРМА", Color = Color3.fromRGB(230, 120, 30) },
+	{ Name = "ПИРОЖКИ", Color = Color3.fromRGB(200, 60, 60) },
+	{ Name = "КОФЕ С СОБОЙ", Color = Color3.fromRGB(110, 70, 40) },
+	{ Name = "ПЕЧАТЬ", Color = Color3.fromRGB(40, 100, 170) },
+}
+local ADS = {
+	"ТРУБНЫЙ ЗАВОД ЖДЁТ ТЕБЯ!", "ЛИЦЕЙ №21: НАБОР ОТКРЫТ", "АВТОШКОЛА «ПРАВА» — СДАЙ С ПЕРВОГО РАЗА",
+	"ПЕЛЬМЕННАЯ: КАК У БАБУШКИ", "СПОРТКОМПЛЕКС «КОСМОС»", "ПЕРВОУРАЛЬСК — ГОРОД НА ГРАНИЦЕ ЕВРОПЫ И АЗИИ",
+	"ДОМ КУЛЬТУРЫ: КРУЖКИ ДЛЯ ВСЕХ", "ЦЕНТРАЛЬНЫЙ СТАДИОН: ФУТБОЛ КАЖДЫЙ ДЕНЬ",
+}
+
+local function buildKiosksAndAds()
+	World.ShopPoints.Kiosk = {}
+	for i, k in Meta.Kiosks or {} do
+		local info = KIOSKS[(i - 1) % #KIOSKS + 1]
+		local base = CFrame.new(k.X, 0, k.Z) * CFrame.Angles(0, math.rad(k.Yaw), 0)
+		-- Корпус киоска позади продавца, спереди — прилавок.
+		part({ Name = "Kiosk", Size = Vector3.new(10, 8, 5), CFrame = base * CFrame.new(0, 4, 1), Color = Color3.fromRGB(235, 235, 230), Material = Enum.Material.SmoothPlastic })
+		for _, x in { -4.7, 4.7 } do
+			part({ Name = "KioskSide", Size = Vector3.new(0.6, 8, 3), CFrame = base * CFrame.new(x, 4, -2.9), Color = Color3.fromRGB(235, 235, 230) })
+		end
+		part({ Name = "KioskTop", Size = Vector3.new(10, 0.6, 3), CFrame = base * CFrame.new(0, 7.7, -2.9), Color = Color3.fromRGB(235, 235, 230) })
+		part({ ClassName = "WedgePart", Name = "Awning", Size = Vector3.new(11, 1.4, 3), CFrame = base * CFrame.new(0, 7.3, -4.8), Color = info.Color, Material = Enum.Material.Fabric })
+		local sign = part({ Name = "KioskSign", Size = Vector3.new(9, 1.6, 0.3), CFrame = base * CFrame.new(0, 8.8, -3.6), Color = info.Color, CanCollide = false })
+		surfaceText(sign, Enum.NormalId.Front, info.Name, info.Color)
+		local counterPart = interactable(nil, "KioskCounter", base * CFrame.new(0, 2.6, -4.2), Vector3.new(7, 0.4, 1.4), Color3.fromRGB(120, 80, 50), nil, Enum.Material.Wood)
+		table.insert(World.ShopPoints.Kiosk, counterPart)
+		worker(base * CFrame.new(0, 0.4, -2.6), "cook", "Продавец киоска", { "Свежая шаурма и горячий кофе!", "Пирожки только из печи." })
+	end
+	for i, b in Meta.Billboards or {} do
+		local base = CFrame.new(b.X, 0, b.Z) * CFrame.Angles(0, math.rad(b.Yaw), 0)
+		for _, x in { -8, 8 } do
+			part({ Name = "BillboardLeg", Size = Vector3.new(0.8, 14, 0.8), CFrame = base * CFrame.new(x, 7, 0), Color = Color3.fromRGB(80, 80, 85), Material = Enum.Material.Metal })
+		end
+		local board = part({ Name = "Billboard", Size = Vector3.new(24, 9, 0.6), CFrame = base * CFrame.new(0, 16, 0), Color = Color3.fromRGB(250, 250, 250) })
+		local ad = ADS[(i - 1) % #ADS + 1]
+		local hue = Color3.fromHSV(((i * 0.17) % 1), 0.7, 0.75)
+		surfaceText(board, Enum.NormalId.Front, ad, hue, Color3.new(1, 1, 1))
+		surfaceText(board, Enum.NormalId.Back, ad, hue, Color3.new(1, 1, 1))
 	end
 end
 
@@ -1188,6 +1588,16 @@ function WorldBuilder.Build()
 	buildWedding(anchors.Wedding)
 	buildPark(anchors.Park)
 	buildJail(anchors.Jail)
+	buildStadium(anchors.Stadium)
+	buildSports(anchors.Sports)
+	buildSchool(anchors.School)
+	buildCulture(anchors.Culture)
+	buildDrivingSchool(anchors.DrivingSchool)
+	buildShootingGallery()
+	buildFishing()
+	buildPlaygrounds()
+	buildParkedCars()
+	buildKiosksAndAds()
 	buildPatrolPosts()
 	buildNature()
 	buildStreets()

@@ -15,6 +15,7 @@ local Ui = require(script.Parent:WaitForChild("Ui"))
 local CarController = require(script.Parent:WaitForChild("CarController"))
 local Ambient = require(script.Parent:WaitForChild("Ambient"))
 local Weather = require(script.Parent:WaitForChild("Weather"))
+local MiniGames = require(script.Parent:WaitForChild("MiniGames"))
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local ActionRemote = Remotes:WaitForChild("Action")
@@ -36,6 +37,8 @@ local state = {
 	PhoneTab = "Задания",
 	Quests = {},
 	Wardrobe = { Owned = {}, Outfit = {} },
+	Progress = { Skills = {}, Education = { School = 0, College = 0 }, Records = {} },
+	Course = nil,
 	SelectedPerson = nil,
 }
 
@@ -400,6 +403,20 @@ local function openShop(shopId)
 		return
 	end
 	local _, body = openWindow("Shop", "🛒 " .. shop.Name, 470, 470)
+	if shopId == "Supermarket" or shopId == "Kiosk" then
+		local hasFish = false
+		for itemId, n in state.Inventory do
+			if Config.Items[itemId] and Config.Items[itemId].SellPrice and n > 0 then
+				hasFish = true
+			end
+		end
+		if hasFish then
+			Ui.button("🎣 Продать улов", Color3.fromRGB(40, 140, 170), function()
+				send("SellFish")
+				closeModal()
+			end, { Position = UDim2.new(1, -230, 0, -40), Size = UDim2.fromOffset(150, 30), TextSize = 13, Parent = body })
+		end
+	end
 	local list = Ui.scroll({ Parent = body })
 	Ui.list(6).Parent = list
 	for i, itemId in shop.Items do
@@ -487,7 +504,7 @@ end
 ---------------------------------------------------------------------------
 -- Телефон
 ---------------------------------------------------------------------------
-local TABS = { "Задания", "Работа", "Люди", "Вещи", "Одежда 👕", "Машины", "Дом", "GPS", "Магазин ⭐", "Помощь" }
+local TABS = { "Задания", "Навыки 🎓", "Работа", "Люди", "Вещи", "Одежда 👕", "Машины", "Дом", "GPS", "Магазин ⭐", "Помощь" }
 local phoneContent
 local renderTab
 
@@ -683,6 +700,40 @@ renderers["Вещи"] = function(c)
 	end
 end
 
+renderers["Навыки 🎓"] = function(c)
+	local P = state.Progress
+	local S = Config.Skills
+	section(c, 1, "Уровень " .. (player:GetAttribute("Level") or 1) .. " — прокачивайте навыки в секциях")
+	for i, key in S.Order do
+		local info = S.List[key]
+		local xp = (P.Skills and P.Skills[key]) or 0
+		local lvl = player:GetAttribute("Skill_" .. key) or 0
+		local nextXp = S.Levels[lvl + 1]
+		local prevXp = lvl > 0 and S.Levels[lvl] or 0
+		local r = row(c, 1 + i, 74)
+		Ui.label({ Text = info.Icon .. " " .. info.Name .. " — ур. " .. lvl .. "/5", Font = Enum.Font.GothamBold, TextSize = 15, Position = UDim2.fromOffset(10, 4), Size = UDim2.new(1, -120, 0, 20), Parent = r })
+		Ui.label({ Text = nextXp and (xp .. " / " .. nextXp .. " опыта") or "Максимум!", TextSize = 12, TextColor3 = T.Sub, TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.new(1, -120, 0, 4), Size = UDim2.fromOffset(110, 20), Parent = r })
+		local bg, fill = Ui.bar(r, T.Accent, 8)
+		bg.Position = UDim2.fromOffset(10, 26)
+		bg.Size = UDim2.new(1, -20, 0, 8)
+		fill.Size = UDim2.fromScale(nextXp and math.clamp((xp - prevXp) / (nextXp - prevXp), 0, 1) or 1, 1)
+		Ui.label({ Text = "Где: " .. info.Where .. "\nБонус: " .. info.Perk, TextSize = 11, TextColor3 = T.Sub, Position = UDim2.fromOffset(10, 38), Size = UDim2.new(1, -20, 0, 32), TextYAlignment = Enum.TextYAlignment.Top, Parent = r })
+	end
+	local E = P.Education or { School = 0, College = 0 }
+	section(c, 20, "Образование и документы")
+	local ed = Config.Education
+	local lines = {
+		(E.School >= ed.SchoolLessons and "✅" or "📘") .. " Аттестат (Лицей №21): " .. E.School .. "/" .. ed.SchoolLessons .. " уроков — открывает работу в офисе",
+		(E.College >= ed.CollegeLessons and "✅" or "📗") .. " Диплом колледжа: " .. E.College .. "/" .. ed.CollegeLessons .. " лекций — +15% к зарплате",
+		(P.License and "✅ Водительские права" or ((P.TheoryPassed and "🚗 Теория сдана, осталась практика" or "🚗 Права: сдайте теорию и вождение") .. " в автошколе")),
+		"🏃 Лучший забег: " .. ((P.Records and P.Records.Run) and (P.Records.Run .. " с") or "—"),
+	}
+	for i, text in lines do
+		Ui.label({ LayoutOrder = 20 + i, Text = text, TextSize = 13, Size = UDim2.new(1, -8, 0, 22), Parent = c })
+	end
+	Ui.label({ LayoutOrder = 40, TextSize = 12, TextColor3 = T.Sub, Size = UDim2.new(1, -8, 0, 54), Text = "Также: футбол на стадионе (забивайте голы), рыбалка на пруду (нужна удочка), тир в парке, игра на гитаре на улице за чаевые. Для спецслужб нужны «Сила» 2 и «Выносливость» 2.", Parent = c })
+end
+
 renderers["Одежда 👕"] = function(c)
 	local C = Config.Clothing
 	local w = state.Wardrobe
@@ -813,6 +864,7 @@ end
 renderers["Помощь"] = function(c)
 	local text = table.concat({
 		"🏙 «" .. Config.GameName .. "» — живите своей жизнью в настоящем Первоуральске: реальные улицы, дома, пруд, администрация, ОМВД, больница, ЗАГС.",
+		"🎓 Учёба и секции: Лицей №21 (аттестат), колледж (диплом), спорткомплекс «КОСМОС» (сила, бокс), стадион (забег, футбол), Дом культуры (гитара, шахматы), автошкола (права), рыбалка на пруду, тир в парке. Прогресс — во вкладке «Навыки».",
 		"📅 Каждый день — 3 новых задания с наградами и бонус за вход (серия до ×7). Новичкам — 10 000$ за регистрацию.",
 		"",
 		"💼 Работа: выберите профессию в телефоне и выполняйте задания (жёлтая метка, клавиша E).",
@@ -849,6 +901,7 @@ function openPhone(tab)
 	end
 	send("GetState")
 	send("GetQuests")
+	send("GetProgress")
 	local _, body = openWindow("Phone", "📱 Телефон", 700, 520)
 	local tabs = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(0, 130, 1, 0), Parent = body }, { Ui.list(6) })
 	for i, name in TABS do
@@ -856,7 +909,7 @@ function openPhone(tab)
 			state.PhoneTab = name
 			state.SelectedPerson = nil
 			openPhone(name)
-		end, { LayoutOrder = i, Size = UDim2.new(1, 0, 0, 38), Parent = tabs })
+		end, { LayoutOrder = i, Size = UDim2.new(1, 0, 0, 34), TextSize = 14, Parent = tabs })
 	end
 	phoneContent = Ui.scroll({ Position = UDim2.fromOffset(140, 0), Size = UDim2.new(1, -140, 1, 0), Parent = body })
 	Ui.list(6).Parent = phoneContent
@@ -1008,6 +1061,25 @@ local handlers = {
 		state.Partner = p.Partner
 		rerenderPhone("Люди")
 	end,
+	MiniGame = function(p)
+		closeModal()
+		MiniGames.Play(gui, Ui, p, function(score, answers)
+			send("MiniGameResult", { Id = p.Id, Score = score, Answers = answers })
+		end, scaleIt)
+	end,
+	Course = function(p)
+		if p.Active then
+			state.Course = { Label = p.Label, Index = p.Index, Total = p.Total, Limit = p.Limit, Started = os.clock() - (p.Elapsed or 0) }
+			setMarker("course", p.Point, "🏁 " .. p.Label .. " " .. p.Index .. "/" .. p.Total, Color3.fromRGB(255, 120, 40))
+		else
+			state.Course = nil
+			clearMarker("course")
+		end
+	end,
+	Progress = function(p)
+		state.Progress = p
+		rerenderPhone("Навыки 🎓")
+	end,
 	Wardrobe = function(p)
 		state.Wardrobe = { Owned = p.Owned or {}, Outfit = p.Outfit or {} }
 		rerenderPhone("Одежда 👕")
@@ -1131,6 +1203,10 @@ RunService.RenderStepped:Connect(function(dt)
 		if left > 0 then
 			table.insert(lines, "⏳ " .. state.Wait.Reason .. ": " .. (left >= 60 and (math.floor(left / 60) .. " мин " .. (left % 60) .. " сек") or (left .. " сек")))
 		end
+	end
+	if state.Course then
+		local cr = state.Course
+		table.insert(lines, string.format("🏁 %s: точка %d/%d • %.1f с из %d", cr.Label, cr.Index, cr.Total, os.clock() - cr.Started, cr.Limit))
 	end
 	if state.Task and state.Task.Target and myPos then
 		local d = (state.Task.Target.Position - myPos).Magnitude

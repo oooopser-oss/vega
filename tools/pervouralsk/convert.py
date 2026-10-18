@@ -119,6 +119,8 @@ print("roads raw vertices", sum(len(l.coords) for l, _, _ in raw_roads), "-> str
 major_lines = [l for l, c, _ in roads if c in MAJOR]
 major_buf = unary_union([l.buffer(ROAD_W[c] / 2) for l, c, _ in roads if c in MAJOR])
 all_road_buf = unary_union([l.buffer(ROAD_W.get(c, 8) / 2) for l, c, _ in roads])
+# Все улицы, кроме проездов и пешеходных дорожек (их можно убрать под объект).
+street_buf = unary_union([l.buffer(ROAD_W.get(c, 8) / 2) for l, c, _ in roads if c not in ("service", "pedestrian")])
 major_tree = STRtree(major_lines)
 major_w = {id(l): ROAD_W[c] for l, c, _ in roads if c in MAJOR}
 
@@ -214,7 +216,7 @@ def removed_area(poly):
     return sum(buildings[i]["poly"].intersection(poly).area for i in btree.query(poly))
 
 
-def find_spot(target, w, d, front, back=0, side=4, radius=420, step=8, need_road=True, yaws=(0, 90, 180, 270)):
+def find_spot(target, w, d, front, back=0, side=4, radius=420, step=8, need_road=True, yaws=(0, 90, 180, 270), avoid_all=False):
     tx, tz = target
     best = None
     for dx in range(-radius, radius + 1, step):
@@ -229,6 +231,8 @@ def find_spot(target, w, d, front, back=0, side=4, radius=420, step=8, need_road
                 if not BOUNDS.contains(poly):
                     continue
                 if poly.intersects(major_buf) or poly.intersects(water):
+                    continue
+                if avoid_all and poly.intersects(street_buf):
                     continue
                 if any(poly.intersects(rp) for rp in reserved):
                     continue
@@ -265,9 +269,16 @@ SPECS = [
     ("Dealership", (700 * K, 820 * K), 90, 60, 34, 0, 4),
     ("Factory", (1150 * K, 420 * K), 110, 90, 30, 40, 4),
     ("Jail", (-650 * K, 950 * K), 94, 92, 30, 0, 4),
+    # Секции, учёба и досуг — у реальных объектов.
+    ("Stadium", place("Центральный Стадион"), 200, 150, 8, 0, 4),
+    ("Sports", place("КОСМОС"), 80, 60, 30, 0, 4),
+    ("School", place("Лицей 21"), 100, 70, 44, 0, 4),
+    ("Culture", place("Центральная городская библиотека"), 80, 60, 30, 0, 4),
+    ("DrivingSchool", (620 * K, 700 * K), 60, 40, 40, 0, 4),
 ]
+NEW_VENUES = {"Stadium", "Sports", "School", "Culture", "DrivingSchool"}
 for key, target, w, d, front, back, side in SPECS:
-    anchors[key] = find_spot(target, w, d, front, back, side)
+    anchors[key] = find_spot(target, w, d, front, back, side, avoid_all=key in NEW_VENUES)
     anchors[key].update({"W": w, "D": d})
     print("anchor", key, anchors[key])
 
@@ -346,7 +357,7 @@ reserved_union = unary_union(reserved)
 CLS_INDEX = {c: i + 1 for i, c in enumerate(ROAD_CLASSES)}
 
 road_out = []
-kept = [(l, c, n) for l, c, n in roads if not (c in ("service", "pedestrian") and l.intersects(reserved_union))]
+kept = [(l, c, n) for l, c, n in roads if not (c in ("service", "pedestrian") and l.buffer(ROAD_W[c] / 2 + 1).intersects(reserved_union))]
 for line, cls, name in kept:
     w = ROAD_W.get(cls, 8)
     coords = list(line.coords)
@@ -637,6 +648,97 @@ for line, cls, name in roads:
         d += 130
 lamps = lamps[:420]
 
+# ---------------------------------------------------------------------------
+# Места для занятий и детали дворов
+# ---------------------------------------------------------------------------
+free_prep = shapely.prepared.prep(unary_union([b["poly"] for b in buildings] + [all_road_buf, water, reserved_union]).buffer(3))
+
+def far_from(lst, x, z, d):
+    return all(math.hypot(x - a, z - b) > d for a, b, *_ in lst)
+
+# Рыбалка: берег самого большого водоёма (Нижнешайтанский пруд).
+fishing = []
+if not water.is_empty:
+    pond = max(getattr(water, "geoms", [water]), key=lambda g: g.area)
+    ring = pond.exterior
+    steps = int(ring.length // 25)
+    cand = []
+    for i in range(steps):
+        p = ring.interpolate(i * 25)
+        q = ring.interpolate(i * 25 + 5)
+        # Нормаль наружу от воды: пробуем обе стороны.
+        dx, dz = q.x - p.x, q.y - p.y
+        L = math.hypot(dx, dz) or 1
+        for sgn in (1, -1):
+            nx, nz = -dz / L * sgn, dx / L * sgn
+            sx, sz = p.x + nx * 6, p.y + nz * 6
+            if not pond.contains(Point(sx, sz)) and not free_prep.contains(Point(sx, sz)) and road_dist(Point(sx, sz)) < 220:
+                cand.append((road_dist(Point(sx, sz)), sx, sz, math.degrees(math.atan2(-(-nx), -(-nz)))))
+    cand.sort()
+    for d, x, z, yaw in cand:
+        if len(fishing) >= 6:
+            break
+        if far_from(fishing, x, z, 60):
+            fishing.append((x, z, yaw))
+print("fishing spots", len(fishing))
+
+# Детские площадки во дворах: свободное место 40×40 рядом с домами.
+playgrounds = []
+building_union = unary_union([b["poly"] for b in buildings])
+for _ in range(6000):
+    if len(playgrounds) >= 18:
+        break
+    x = random.uniform(-700 * K, 900 * K)
+    z = random.uniform(-1200 * K, 1200 * K)
+    sq = box(x - 20, z - 20, x + 20, z + 20)
+    corners = ((x - 20, z - 20), (x + 20, z - 20), (x - 20, z + 20), (x + 20, z + 20), (x, z))
+    if any(free_prep.contains(Point(cx, cz)) for cx, cz in corners):
+        continue
+    if building_union.distance(sq) > 35:
+        continue
+    if far_from(playgrounds, x, z, 180):
+        playgrounds.append((x, z, 0))
+print("playgrounds", len(playgrounds))
+
+# Припаркованные машины вдоль дворовых проездов.
+parked = []
+for line, cls, name in roads:
+    if cls != "service" or line.length < 24 or len(parked) >= 140:
+        continue
+    for t in (8, 17, 26):
+        if t > line.length - 4:
+            break
+        p = line.interpolate(t)
+        q = line.interpolate(min(t + 2, line.length))
+        dx, dz = q.x - p.x, q.y - p.y
+        L = math.hypot(dx, dz) or 1
+        x, z = p.x - dz / L * 9, p.y + dx / L * 9
+        if not free_prep.contains(Point(x, z)) and far_from(parked, x, z, 7):
+            parked.append((x, z, math.degrees(math.atan2(-dx, -dz))))
+print("parked cars", len(parked))
+
+# Киоски и рекламные щиты у главных улиц.
+kiosks, billboards = [], []
+for line, cls, name in roads:
+    if cls not in ("primary", "secondary"):
+        continue
+    w = ROAD_W[cls]
+    for t in range(40, int(line.length) - 40, 60):
+        p = line.interpolate(t)
+        q = line.interpolate(t + 2)
+        dx, dz = q.x - p.x, q.y - p.y
+        L = math.hypot(dx, dz) or 1
+        nx, nz = -dz / L, dx / L
+        face = math.degrees(math.atan2(nx, nz))  # лицом к дороге
+        kx, kz = p.x + nx * (w / 2 + 11), p.y + nz * (w / 2 + 11)
+        if len(kiosks) < 10 and not free_prep.contains(Point(kx, kz)) and far_from(kiosks, kx, kz, 260):
+            kiosks.append((kx, kz, face))
+            continue
+        bx, bz = p.x - nx * (w / 2 + 16), p.y - nz * (w / 2 + 16)
+        if len(billboards) < 14 and not free_prep.contains(Point(bx, bz)) and far_from(billboards, bx, bz, 320):
+            billboards.append((bx, bz, face + 180))
+print("kiosks", len(kiosks), "billboards", len(billboards))
+
 # Перекрёстки главных улиц для постов полиции.
 ends = {}
 for line, cls, name in roads:
@@ -739,6 +841,11 @@ meta.append("\tHouses = {")
 for h in houses:
     meta.append(f"\t\t{anchor_lua(h)},")
 meta.append("\t},")
+for title, lst in (("FishingSpots", fishing), ("Playgrounds", playgrounds), ("ParkedCars", parked), ("Kiosks", kiosks), ("Billboards", billboards)):
+    meta.append("\t" + title + " = {")
+    for x, z, yaw in lst:
+        meta.append(f"\t\t{{ X = {r1(x)}, Z = {r1(z)}, Yaw = {r1(yaw)} }},")
+    meta.append("\t},")
 meta.append("\tPatrolPosts = {")
 for x, z in posts:
     meta.append(f"\t\t{{ X = {r1(x)}, Z = {r1(z)} }},")

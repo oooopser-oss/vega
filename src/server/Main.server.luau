@@ -36,9 +36,12 @@ local ctx = {
 	Npcs = require(Services.NpcService),
 	Weather = require(Services.WeatherService),
 	Clothing = require(Services.ClothingService),
+	Progression = require(Services.ProgressionService),
+	Activities = require(Services.ActivityService),
+	Football = require(Services.FootballService),
 }
 
-for _, name in { "Needs", "Economy", "Jobs", "Crime", "Tools", "Housing", "Social", "Vehicles", "Monetization", "Quests", "Npcs", "Weather", "Clothing", "Players" } do
+for _, name in { "Needs", "Economy", "Jobs", "Crime", "Tools", "Housing", "Social", "Vehicles", "Monetization", "Quests", "Npcs", "Weather", "Clothing", "Progression", "Activities", "Football", "Players" } do
 	ctx[name].Init(ctx)
 end
 ctx.Players.Start()

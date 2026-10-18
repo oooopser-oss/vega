@@ -14,7 +14,14 @@ local wrap, unwrap
 
 local function signal()
 	local s = { handlers = {} }
-	function s:Connect(fn) table.insert(self.handlers, fn) return { Disconnect = function() end } end
+	function s:Connect(fn)
+		table.insert(self.handlers, fn)
+		local handlers = self.handlers
+		return { Disconnect = function()
+			local i = table.find(handlers, fn)
+			if i then table.remove(handlers, i) end
+		end }
+	end
 	function s:Fire(...) for _, h in self.handlers do h(...) end end
 	function s:Wait() return nil end
 	return s
@@ -95,6 +102,10 @@ function wrap(real)
 				if type(k) == "string" and k:match("^%u") then
 					-- событие (Triggered, MouseButton1Click, ...) или нереализованное в Lune свойство
 					if k == "AssemblyMass" then return 50 end
+					if k == "Position" then
+						local okc, cf = pcall(function() return real.CFrame end)
+						if okc and typeof(cf) == "CFrame" then return cf.Position end
+					end
 					if k == "Occupant" or k == "CurrentCamera" or k == "Character" or k == "ViewportSize" then return nil end
 					return sigFor(real, k)
 				end
@@ -129,10 +140,25 @@ local function typeofShim(x)
 	return realTypeof(x)
 end
 
+-- CFrame.lookAt в Lune отражает ось Z (LookVector указывает не туда),
+-- поэтому подменяем его корректной реализацией через fromMatrix.
+local CFrameShim = setmetatable({
+	lookAt = function(at, target, up)
+		up = up or roblox.Vector3.new(0, 1, 0)
+		local look = (target - at).Unit
+		local right = look:Cross(up)
+		if right.Magnitude < 1e-6 then
+			right = look:Cross(roblox.Vector3.new(0, 0, 1))
+		end
+		right = right.Unit
+		return roblox.CFrame.fromMatrix(at, right, right:Cross(look))
+	end,
+}, { __index = roblox.CFrame })
+
 function H.makeEnv(gameObj, extra)
 	local env = {
 		game = gameObj, workspace = wrap(place:GetService("Workspace")), task = task,
-		Instance = InstanceShim, Vector3 = roblox.Vector3, Vector2 = roblox.Vector2, CFrame = roblox.CFrame,
+		Instance = InstanceShim, Vector3 = roblox.Vector3, Vector2 = roblox.Vector2, CFrame = CFrameShim,
 		Color3 = roblox.Color3, UDim2 = roblox.UDim2, UDim = roblox.UDim, Enum = roblox.Enum, BrickColor = roblox.BrickColor,
 		ColorSequence = roblox.ColorSequence, NumberSequence = roblox.NumberSequence, NumberRange = roblox.NumberRange,
 		ColorSequenceKeypoint = roblox.ColorSequenceKeypoint, PhysicalProperties = roblox.PhysicalProperties,

@@ -41,6 +41,7 @@ Config.Roles = {
 		CanArrest = true,
 		ArrestBonus = 200,
 		MaxPlayers = 3,
+		RequiresSkills = { Strength = 2, Stamina = 2 }, -- тренируйтесь в спорткомплексе и на стадионе
 	},
 	Medic = {
 		Name = "Медик",
@@ -72,7 +73,7 @@ Config.RoleChangeCooldown = 60
 Config.Jobs = {
 	cashier = { Name = "Кассир", Place = "Supermarket", Type = "station", Pay = 20, Action = "Обслужить покупателя", Duration = 4, Cooldown = 12, WaitText = "Ждём следующего покупателя" },
 	cook = { Name = "Повар", Place = "Cafe", Type = "delivery", Pay = 35, Pickup = "Приготовить блюдо", Drop = "Отдать заказ", Duration = 5, Cooldown = 8, WaitText = "Ждём новый заказ" },
-	office = { Name = "Офисный работник", Place = "Office", Type = "station", Pay = 40, Action = "Составить отчёт", Duration = 8, Cooldown = 15, WaitText = "Ждём новую задачу от начальника" },
+	office = { Name = "Офисный работник", Place = "Office", Type = "station", Pay = 40, Action = "Составить отчёт", Duration = 8, Cooldown = 15, WaitText = "Ждём новую задачу от начальника", Requires = "School" },
 	loader = { Name = "Грузчик", Place = "Factory", Type = "delivery", Pay = 35, Pickup = "Взять ящик", Drop = "Погрузить ящик", Duration = 2, Cooldown = 5, WaitText = "Ждём следующую партию" },
 	courier = { Name = "Курьер", Place = "Factory", Type = "courier", Pay = 70, Pickup = "Забрать посылку", Drop = "Доставить посылку", Duration = 2, Cooldown = 5, WaitText = "Посылку упаковывают" },
 	patrol = { Name = "Патрульный", Place = "Patrol", Type = "station", Pay = 45, Action = "Отметиться на посту", Duration = 2, Cooldown = 20, WaitText = "Патрулируйте район" },
@@ -112,12 +113,25 @@ Config.Items = {
 	chocolate = { Name = "Конфеты", Price = 40, Gift = true, Effects = { Hunger = 10, Fun = 10 } },
 	umbrella = { Name = "Зонт", Price = 120, Passive = "Защищает от дождя и снега на улице" },
 	ring = { Name = "Обручальное кольцо", Price = 1500, Gift = true },
+	shawarma = { Name = "Шаурма", Price = 45, Effects = { Hunger = 40, Fun = 4 } },
+	pie = { Name = "Пирожок", Price = 20, Effects = { Hunger = 18 } },
+	protein = { Name = "Протеиновый батончик", Price = 35, Effects = { Energy = 15, Hunger = 10 } },
+	book = { Name = "Книга", Price = 60, Effects = { Fun = 15 } },
+	rod = { Name = "Удочка", Price = 150, Passive = "Нужна для рыбалки на пруду" },
+	guitar = { Name = "Гитара", Price = 500, Passive = "Играйте на улице и получайте чаевые" },
+	fish_crucian = { Name = "Карась", Price = 0, SellPrice = 25, Effects = { Hunger = 15 } },
+	fish_perch = { Name = "Окунь", Price = 0, SellPrice = 40, Effects = { Hunger = 20 } },
+	fish_pike = { Name = "Щука", Price = 0, SellPrice = 90, Effects = { Hunger = 30 } },
+	fish_catfish = { Name = "Сом", Price = 0, SellPrice = 250, Effects = { Hunger = 45, Fun = 10 } },
 }
 
 Config.Shops = {
 	Supermarket = { Name = "Супермаркет", Items = { "bread", "salad", "water", "coffee", "soap", "chocolate", "pizza", "umbrella" } },
 	Cafe = { Name = "Пельменная", Items = { "burger", "pizza", "coffee", "cake", "water" } },
 	Florist = { Name = "Цветы и подарки", Items = { "flowers", "chocolate", "ring" } },
+	Sports = { Name = "Спортивный магазин", Items = { "protein", "water", "rod" } },
+	Culture = { Name = "Лавка Дома культуры", Items = { "book", "guitar", "coffee" } },
+	Kiosk = { Name = "Киоск", Items = { "shawarma", "pie", "coffee", "water" } },
 }
 
 Config.Cars = {
@@ -125,6 +139,7 @@ Config.Cars = {
 	suv = { Name = "Внедорожник", Price = 6500, Speed = 65, Color = Color3.fromRGB(60, 90, 60) },
 	sport = { Name = "Спорткар", Price = 15000, Speed = 95, Color = Color3.fromRGB(220, 30, 30) },
 	limo = { Name = "Лимузин (Премиум-гараж)", Price = 0, Speed = 80, Color = Color3.fromRGB(15, 15, 20), Pass = "PremiumGarage" },
+	school = { Name = "Учебная машина", Price = 0, Speed = 45, Color = Color3.fromRGB(245, 245, 245), Hidden = true },
 	police = { Name = "Патрульная машина", Price = 0, Speed = 85, Color = Color3.fromRGB(240, 240, 255), Police = true, Hidden = true },
 }
 Config.CarOrder = { "sedan", "suv", "sport", "limo" }
@@ -198,6 +213,9 @@ Config.Quests = {
 		fun = { Text = "Отдохните %d раз(а) (парк, скамейки, кафе)", Goals = { 2, 4 }, Reward = 110 },
 		visit = { Text = "Посетите: %s", Goals = { 1 }, Reward = 450 },
 		drive = { Text = "Проедьте на машине %d м", Goals = { 1500, 3000 }, Reward = 0.25 },
+		train = { Text = "Позанимайтесь в секциях %d раз(а) (спорткомплекс, стадион)", Goals = { 2, 3 }, Reward = 150 },
+		study = { Text = "Посетите %d урок(а) в лицее или колледже", Goals = { 1, 2 }, Reward = 250 },
+		fish = { Text = "Поймайте %d рыб(ы) на пруду", Goals = { 2, 4 }, Reward = 120 },
 		arrest = { Text = "Задержите %d преступника(ов)", Goals = { 1, 2 }, Reward = 500, Role = { "Police", "SWAT" } },
 		heal = { Text = "Окажите помощь %d пациентам", Goals = { 2, 4 }, Reward = 200, Role = { "Medic" } },
 		rob = { Text = "Совершите %d ограбление(я) и не попадитесь", Goals = { 1, 2 }, Reward = 400, Role = { "Criminal" } },
@@ -331,5 +349,52 @@ for id, item in Config.Clothing.Items do
 end
 Config.Monetization.GamePasses.Fashion = { Id = 0, Name = "Модный гардероб", Robux = 499, Description = "Вся премиум-одежда навсегда: куртки, корона, нимб, крылья и другое." }
 table.insert(Config.Monetization.PassOrder, "Fashion")
+
+-- Навыки: 5 уровней, опыт за занятия в секциях и мини-игры.
+Config.Skills = {
+	Order = { "Strength", "Boxing", "Stamina", "Football", "Intellect", "Music", "Driving", "Fishing" },
+	Levels = { 100, 250, 450, 700, 1000 }, -- опыт для уровней 1..5
+	List = {
+		Strength = { Name = "Сила", Icon = "💪", Where = "Спорткомплекс «КОСМОС»: тренажёры", Perk = "+5% к оплате грузчика и курьера, +2 к удару битой за уровень" },
+		Boxing = { Name = "Бокс", Icon = "🥊", Where = "Спорткомплекс «КОСМОС»: ринг и груши", Perk = "−0,4 с оглушения шокером, +2 к удару за уровень" },
+		Stamina = { Name = "Выносливость", Icon = "🏃", Where = "Центральный стадион: беговая дорожка", Perk = "+0,5 к скорости бега, −5% расхода энергии за уровень" },
+		Football = { Name = "Футбол", Icon = "⚽", Where = "Центральный стадион: забивайте голы", Perk = "+8% к силе удара по мячу за уровень" },
+		Intellect = { Name = "Интеллект", Icon = "🧠", Where = "Лицей №21 (уроки) и шахматный клуб в Доме культуры", Perk = "+6% к оплате офиса за уровень" },
+		Music = { Name = "Музыка", Icon = "🎸", Where = "Дом культуры: уроки гитары", Perk = "Чаевые за игру на улице: +40% за уровень" },
+		Driving = { Name = "Вождение", Icon = "🚗", Where = "Автошкола: экзамены и практика", Perk = "+3% к скорости машины за уровень" },
+		Fishing = { Name = "Рыбалка", Icon = "🎣", Where = "Нижнешайтанский пруд", Perk = "Чаще клюёт крупная рыба" },
+	},
+}
+
+-- Занятия (мини-игры). Type: timing — нажать вовремя, targets — быстро
+-- кликать по мишеням, sequence — повторить последовательность (память),
+-- rhythm — ритм-игра, quiz — вопросы.
+Config.Activities = {
+	gym = { Name = "Тренажёр", Type = "timing", Rounds = 6, Skill = "Strength", XP = 12, Cost = 15, Needs = { Energy = -6, Hunger = -3, Fun = 3 }, Cooldown = 20 },
+	boxing = { Name = "Боксёрская груша", Type = "targets", Duration = 15, Skill = "Boxing", XP = 2.5, Cost = 20, Needs = { Energy = -8, Hunger = -3, Fun = 4 }, Cooldown = 25 },
+	chess = { Name = "Шахматный кружок", Type = "sequence", Skill = "Intellect", XP = 10, Cost = 0, Needs = { Fun = 6 }, Cooldown = 20 },
+	guitar = { Name = "Урок гитары", Type = "rhythm", Duration = 20, Skill = "Music", XP = 1.6, Cost = 10, Needs = { Fun = 8 }, Cooldown = 25 },
+	shooting = { Name = "Тир", Type = "targets", Duration = 20, Cost = 10, Needs = { Fun = 12 }, Cooldown = 15, Prizes = { { 25, 60 }, { 15, 25 } } },
+	fishing = { Name = "Рыбалка", Type = "timing", Rounds = 1, Wait = true, Skill = "Fishing", XP = 15, Cost = 0, Needs = { Fun = 5 }, Cooldown = 6, Item = "rod" },
+	lesson = { Name = "Урок в лицее", Type = "quiz", Bank = "School", Questions = 5, Pass = 3, Skill = "Intellect", XP = 15, Cost = 0, Needs = { Fun = -2, Energy = -3 }, Cooldown = 45 },
+	college = { Name = "Лекция в колледже", Type = "quiz", Bank = "College", Questions = 5, Pass = 4, Skill = "Intellect", XP = 20, Cost = 100, Needs = { Energy = -4 }, Cooldown = 60, Requires = "School" },
+	theory = { Name = "Теория ПДД (экзамен)", Type = "quiz", Bank = "Traffic", Questions = 10, Pass = 8, Skill = "Driving", XP = 5, Cost = 300, Cooldown = 30 },
+}
+
+Config.Education = {
+	SchoolLessons = 5, -- уроков до аттестата
+	CollegeLessons = 6, -- лекций до диплома
+	DiplomaPayBonus = 0.15, -- +15% к зарплате на любой работе
+}
+
+-- Рыба: шанс зависит от уровня рыбалки.
+Config.Fish = {
+	{ Item = "fish_crucian", Weight = 50 },
+	{ Item = "fish_perch", Weight = 30 },
+	{ Item = "fish_pike", Weight = 14, PerLevel = 3 },
+	{ Item = "fish_catfish", Weight = 3, PerLevel = 2 },
+}
+
+Config.Busking = { Interval = 6, MinTip = 3, MaxTip = 9, DailyCap = 900 }
 
 return Config

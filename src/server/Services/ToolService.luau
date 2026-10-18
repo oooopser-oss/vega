@@ -17,6 +17,7 @@ local TOOL_DEFS = {
 	Handcuffs = { Name = "Наручники", Tip = "Арестовать разыскиваемого рядом", Color = Color3.fromRGB(180, 180, 190), Size = Vector3.new(1, 0.4, 1.6), Cooldown = 1.5, Range = 8 },
 	Taser = { Name = "Электрошокер", Tip = "Обездвижить цель перед собой", Color = Color3.fromRGB(240, 220, 40), Size = Vector3.new(0.5, 1, 1.6), Cooldown = 5, Range = 25 },
 	Medkit = { Name = "Аптечка", Tip = "Вылечить игрока рядом", Color = Color3.fromRGB(230, 40, 40), Size = Vector3.new(1.6, 1.2, 0.8), Cooldown = 2, Range = 8 },
+	Guitar = { Name = "Гитара", Tip = "Играть на улице за чаевые", Color = Color3.fromRGB(190, 120, 50), Size = Vector3.new(1, 3, 0.4), Cooldown = 1, Range = 0 },
 	Bat = { Name = "Бита", Tip = "Ударить игрока перед собой", Color = Color3.fromRGB(150, 100, 60), Size = Vector3.new(0.5, 0.5, 4), Cooldown = 0.8, Range = 7 },
 }
 
@@ -79,6 +80,10 @@ local function useTool(player, name)
 	if onCooldown(player, name, def.Cooldown) then
 		return
 	end
+	if name == "Guitar" then
+		ctx.Activities.ToggleBusking(player)
+		return
+	end
 	if name == "Handcuffs" then
 		local target = targetInFront(player, def.Range, -1)
 		if not target then
@@ -92,7 +97,8 @@ local function useTool(player, name)
 			ctx.Net.Notify(player, "Промах!", "info")
 			return
 		end
-		stun(target, Config.Crime.TaserStun)
+		-- Боксёры быстрее приходят в себя.
+		stun(target, math.max(1, Config.Crime.TaserStun - 0.4 * ctx.Progression.Level(target, "Boxing")))
 		if (target:GetAttribute("Wanted") or 0) == 0 then
 			ctx.Net.Notify(player, "Внимание: " .. target.DisplayName .. " не в розыске. Не злоупотребляйте шокером!", "warn")
 		end
@@ -129,7 +135,9 @@ local function useTool(player, name)
 			return
 		end
 		ctx.Crime.TagAttack(target, player)
-		hum:TakeDamage(Config.Crime.BatDamage)
+		-- Навыки «Сила» и «Бокс» усиливают удар.
+		local bonus = 2 * (ctx.Progression.Level(player, "Strength") + ctx.Progression.Level(player, "Boxing"))
+		hum:TakeDamage(Config.Crime.BatDamage + bonus)
 		local hrp, thrp = Util.HRP(player), Util.HRP(target)
 		if hrp and thrp then
 			thrp.AssemblyLinearVelocity += (thrp.Position - hrp.Position).Unit * 30 + Vector3.new(0, 15, 0)
@@ -187,11 +195,15 @@ function ToolService.GiveRoleTools(player)
 	ToolService.RemoveTools(player)
 	local role = Config.Roles[player:GetAttribute("Role") or "Citizen"]
 	local backpack = player:FindFirstChild("Backpack")
-	if not role or not role.Tools or not backpack then
+	if not role or not backpack then
 		return
 	end
-	for _, name in role.Tools do
+	for _, name in role.Tools or {} do
 		makeTool(name).Parent = backpack
+	end
+	-- Хобби: купленная гитара.
+	if ctx.Data.HasItem(player, "guitar") then
+		makeTool("Guitar").Parent = backpack
 	end
 end
 

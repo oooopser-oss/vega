@@ -40,7 +40,9 @@ function CarController.Start()
 		end
 		CarController.Driving = true
 		local grip = GRIP[workspace:GetAttribute("Weather") or "Clear"] or 1
-		local maxSpeed = (model:GetAttribute("MaxSpeed") or 60) * grip
+		-- Навык «Вождение»: +3% к скорости за уровень.
+		local skill = 1 + 0.03 * (player:GetAttribute("Skill_Driving") or 0)
+		local maxSpeed = (model:GetAttribute("MaxSpeed") or 60) * grip * skill
 		local throttle = seat.ThrottleFloat
 		local steer = seat.SteerFloat
 

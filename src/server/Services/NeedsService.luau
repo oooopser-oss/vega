@@ -45,7 +45,8 @@ function NeedsService.UpdateSpeed(player)
 	if not hum then
 		return
 	end
-	local speed = 16
+	-- Выносливость: +0,5 к скорости за уровень.
+	local speed = 16 + 0.5 * (player:GetAttribute("Skill_Stamina") or 0)
 	if (player:GetAttribute("Energy") or 100) < 15 then
 		speed = 10
 	end
@@ -187,7 +188,8 @@ local function tick(dt)
 				local info = Config.Needs[need]
 				local paused = act and ((act.Kind == "Sleep" and need == "Energy") or (act.Kind == "Shower" and need == "Hygiene") or (act.Kind == "TV" and need == "Fun"))
 				if not paused then
-					NeedsService.Change(player, need, -info.Decay * minutes)
+					local mult = need == "Energy" and (1 - 0.05 * (player:GetAttribute("Skill_Stamina") or 0)) or 1
+					NeedsService.Change(player, need, -info.Decay * minutes * mult)
 				end
 				local v = player:GetAttribute(need) or 0
 				warned[player] = warned[player] or {}

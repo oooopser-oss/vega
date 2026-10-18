@@ -77,7 +77,7 @@ function PlayerService.UpdateNameplate(player)
 	gui.NameLabel.TextColor3 = player:GetAttribute("Pass_VIP") and Color3.fromRGB(255, 210, 70) or Color3.new(1, 1, 1)
 	local jobId = player:GetAttribute("Job") or ""
 	local job = Config.Jobs[jobId]
-	gui.RoleLabel.Text = role.Name .. (job and (" • " .. job.Name) or "")
+	gui.RoleLabel.Text = "Ур. " .. (player:GetAttribute("Level") or 1) .. " • " .. role.Name .. (job and (" • " .. job.Name) or "")
 	gui.RoleLabel.TextColor3 = role.Color:Lerp(Color3.new(1, 1, 1), 0.35)
 	local rel = relationLine(player)
 	gui.RelLabel.Visible = rel ~= nil
@@ -178,6 +178,12 @@ function PlayerService.SetRole(player, roleId, force)
 			ctx.Net.Notify(player, "Сменить роль можно через " .. math.ceil(Config.RoleChangeCooldown - (os.clock() - last)) .. " сек.", "bad")
 			return
 		end
+		for skill, need in role.RequiresSkills or {} do
+			if ctx.Progression.Level(player, skill) < need then
+				ctx.Net.Notify(player, "Для роли «" .. role.Name .. "» нужен навык «" .. Config.Skills.List[skill].Name .. "» уровня " .. need .. ". Тренируйтесь!", "bad")
+				return
+			end
+		end
 		if role.MaxPlayers > 0 and current ~= roleId and roleCount(roleId) >= role.MaxPlayers then
 			ctx.Net.Notify(player, "Все места в роли «" .. role.Name .. "» заняты.", "bad")
 			return
@@ -224,13 +230,14 @@ local function onPlayerAdded(player)
 	ctx.Social.OnPlayerAdded(player)
 	ctx.Monetization.OnPlayerAdded(player)
 	ctx.Clothing.OnPlayerAdded(player)
+	ctx.Progression.OnPlayerAdded(player)
 	ctx.Quests.Send(player)
 	if ctx.Data.IsReadOnly(player) then
 		ctx.Net.Notify(player, "Не удалось загрузить ваш прогресс. Перезайдите позже — ваши данные в безопасности, сейчас они не будут перезаписаны.", "bad")
 	end
 
 	player.AttributeChanged:Connect(function(attr)
-		if attr == "Role" or attr == "Job" or attr == "Wanted" or attr == "PartnerName" or attr == "RelStatus" or attr == "Jailed" then
+		if attr == "Level" or attr == "Role" or attr == "Job" or attr == "Wanted" or attr == "PartnerName" or attr == "RelStatus" or attr == "Jailed" then
 			PlayerService.UpdateNameplate(player)
 		end
 	end)

@@ -217,6 +217,15 @@ local function freeSpawnNear(pos)
 	return best
 end
 
+-- Учебная и другие служебные машины (без проверки прав и паузы).
+function VehicleService.SpawnSpecial(player, carId, cf)
+	VehicleService.DespawnFor(player, true)
+	local car = buildCar(carId, cf, player)
+	activeCars[player] = car
+	ctx.Net.Send(player, "Waypoint", { Name = Config.Cars[carId].Name, Position = cf.Position })
+	return car
+end
+
 local function spawnCar(player, carId, cf)
 	if lastSpawn[player] and os.clock() - lastSpawn[player] < 5 then
 		ctx.Net.Notify(player, "Подождите пару секунд.", "info")
@@ -257,6 +266,10 @@ function VehicleService.Init(c)
 			Net.Notify(player, "У вас уже есть эта машина.", "info")
 			return
 		end
+		if not data.License then
+			Net.Notify(player, "Без водительских прав машину не продадут. Сдайте экзамены в автошколе (см. GPS).", "bad")
+			return
+		end
 		if not Util.Near(player, ctx.World.Dealership, 25) then
 			Net.Notify(player, "Покупка машин — в автосалоне.", "bad")
 			return
@@ -277,6 +290,10 @@ function VehicleService.Init(c)
 			return
 		end
 		local owned = data.Cars[p.Car] or (def.Pass and ctx.Monetization.HasPass(player, def.Pass))
+		if owned and not data.License then
+			Net.Notify(player, "Сначала получите права в автошколе.", "bad")
+			return
+		end
 		if not owned then
 			if def.Pass then
 				Net.Notify(player, "Эта машина доступна с пассом «" .. Config.Monetization.GamePasses[def.Pass].Name .. "».", "info")

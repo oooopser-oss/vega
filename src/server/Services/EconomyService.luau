@@ -31,12 +31,32 @@ function EconomyService.Init(c)
 	local Net = ctx.Net
 	local Data = ctx.Data
 
-	for shopId, shopPart in World.Shops do
+	local function shopPrompt(shopId, shopPart)
 		local shop = Config.Shops[shopId]
 		local pp = MakePrompt(shopPart, "Купить", shop.Name, 0, 10)
 		pp.Triggered:Connect(function(player)
 			Net.Send(player, "OpenShop", { Shop = shopId })
 		end)
+	end
+	for shopId, shopPart in World.Shops do
+		shopPrompt(shopId, shopPart)
+	end
+	for shopId, parts in World.ShopPoints do
+		for _, shopPart in parts do
+			shopPrompt(shopId, shopPart)
+		end
+	end
+	-- Рядом ли игрок с любой точкой этого магазина.
+	local function nearShop(player, shopId)
+		if World.Shops[shopId] and Util.Near(player, World.Shops[shopId], SHOP_DISTANCE) then
+			return true
+		end
+		for _, p in World.ShopPoints[shopId] or {} do
+			if Util.Near(player, p, SHOP_DISTANCE) then
+				return true
+			end
+		end
+		return false
 	end
 
 	for _, atm in World.ATMs do
@@ -61,7 +81,7 @@ function EconomyService.Init(c)
 		if not shop or not item or not table.find(shop.Items, itemId) then
 			return
 		end
-		if not Util.Near(player, World.Shops[shopId], SHOP_DISTANCE) then
+		if not nearShop(player, shopId) then
 			Net.Notify(player, "Подойдите ближе к прилавку.", "bad")
 			return
 		end
@@ -74,6 +94,37 @@ function EconomyService.Init(c)
 		Net.Notify(player, "Куплено: " .. item.Name .. " ×" .. count .. " за " .. price .. "$", "good")
 		EconomyService.SendInventory(player)
 		ctx.Quests.Progress(player, "shop", 1)
+		if itemId == "guitar" then
+			ctx.Tools.GiveRoleTools(player) -- гитара появляется в рюкзаке
+		end
+	end)
+
+	-- Продажа улова в супермаркете или киоске.
+	Net.On("SellFish", function(player)
+		if not (nearShop(player, "Supermarket") or nearShop(player, "Kiosk")) then
+			Net.Notify(player, "Улов принимают в супермаркете и киосках.", "bad")
+			return
+		end
+		local data = Data.Get(player)
+		if not data then
+			return
+		end
+		local total, count = 0, 0
+		for itemId, n in data.Inventory do
+			local item = Config.Items[itemId]
+			if item and item.SellPrice and n > 0 then
+				total += item.SellPrice * n
+				count += n
+				data.Inventory[itemId] = nil
+			end
+		end
+		if count == 0 then
+			Net.Notify(player, "У вас нет рыбы на продажу.", "info")
+			return
+		end
+		Data.AddCash(player, total)
+		Net.Send(player, "Earned", { Amount = total, Text = "Продано рыбы: " .. count .. " шт." })
+		EconomyService.SendInventory(player)
 	end)
 
 	Net.On("UseItem", function(player, p)

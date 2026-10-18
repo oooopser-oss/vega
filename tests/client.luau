@@ -53,6 +53,36 @@ local steps = {
 	function() fire("Quests", { List = { { Text = "Выполните 5 рабочих заданий", Progress = 2, Goal = 5, Reward = 300, Done = false, Kind = "work" }, { Text = "Поешьте", Progress = 2, Goal = 2, Reward = 240, Done = true, Kind = "eat" } }, Bonus = 1500, BonusTaken = false, Streak = 3 }); fire("OpenPhone", { Tab = "Задания" }) end,
 	function() fire("OpenPhone", { Tab = "Магазин ⭐" }); assert(clickText("R$ 299"), "no pass btn") end,
 	function()
+		fire("Progress", { Skills = { Strength = 120, Stamina = 300 }, Education = { School = 3, College = 0 }, License = false, TheoryPassed = true, Records = { Run = 41.2 } })
+		fire("OpenPhone", { Tab = "Навыки 🎓" })
+		fire("Course", { Active = true, Label = "Забег", Point = roblox.Vector3.new(1, 2, 3), Index = 2, Total = 9, Limit = 120, Elapsed = 3 })
+		for _, h in table.clone(RunService.RenderStepped.handlers) do h(0.2) end
+		fire("Course", { Active = false })
+	end,
+	function()
+		local games = {
+			{ Type = "timing", Params = { Title = "Тренажёр", Rounds = 3, Speed = 1.2, Zone = 0.2 } },
+			{ Type = "timing", Params = { Title = "Рыбалка", Rounds = 1, Speed = 2.4, Zone = 0.12, Wait = 0.1 } },
+			{ Type = "targets", Params = { Title = "Тир", Duration = 5 } },
+			{ Type = "sequence", Params = { Title = "Шахматы" } },
+			{ Type = "rhythm", Params = { Title = "Гитара", Duration = 6, Seed = 5 } },
+			{ Type = "quiz", Params = { Title = "Урок", Questions = { { Q = "2+2?", O = { "3", "4", "5", "6" } } } } },
+		}
+		for i, g in games do
+			g.Id = i
+			fire("MiniGame", g)
+			for _ = 1, 5 do
+				for _, h in table.clone(RunService.RenderStepped.handlers) do h(0.1) end
+			end
+			if g.Type == "quiz" then
+				assert(clickText("4"), "кнопка ответа")
+			elseif g.Type == "timing" and not g.Params.Wait then
+				assert(clickText("ЖМИ"), "кнопка ЖМИ")
+			end
+			assert(clickText("✕") or g.Type == "quiz", "закрыть мини-игру " .. g.Type)
+		end
+	end,
+	function()
 		fire("Wardrobe", { Owned = { tee_white = true, jeans = true, cap = true }, Outfit = { Top = "tee_white", Hat = "cap" } })
 		fire("OpenPhone", { Tab = "Одежда 👕" })
 		assert(clickText("Надето"), "нет надетой вещи")

@@ -14,7 +14,7 @@ local DataService = {}
 -- потеряют прогресс. Изменения формата данных делаются через DATA_VERSION
 -- и миграции ниже (см. UPDATES.md).
 local STORE_NAME = "LifeCity_v1"
-local DATA_VERSION = 2
+local DATA_VERSION = 3
 
 -- Миграции: функция для каждой новой версии формата данных.
 -- Старые сохранения последовательно доводятся до DATA_VERSION.
@@ -23,6 +23,12 @@ local MIGRATIONS = {
 		-- v2: город Первоуральск, ежедневные задания, монетизация.
 		data.Quests = nil
 		data.RegistrationBonusGiven = data.RegistrationBonusGiven or false
+	end,
+	[3] = function(data)
+		-- v3: навыки, учёба, права. Кто уже купил машину — получает права.
+		if type(data.Cars) == "table" and next(data.Cars) ~= nil then
+			data.License = true
+		end
 	end,
 }
 local store
@@ -40,6 +46,10 @@ local function defaultData()
 		Inventory = { bread = 2, water = 2 },
 		Cars = {},
 		Wardrobe = {}, -- купленная одежда: [id] = true
+		Skills = {}, -- опыт навыков: [skill] = xp
+		Education = { School = 0, College = 0 }, -- сданные уроки и лекции
+		Records = {}, -- личные рекорды (забег)
+		License = false, -- водительские права
 		Outfit = nil, -- надетый комплект { Top, Bottom, Hat, Accessory }; nil — свой аватар
 		HasHouse = false,
 		Role = "Citizen",

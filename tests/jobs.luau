@@ -36,6 +36,7 @@ J.Init({
 	Needs = { Change = function() end },
 	Quests = { Progress = function() end },
 	Monetization = { PayMultiplier = function() return 1 end },
+	Progression = { PayMultiplier = function() return 1 end, Meets = function() return true end },
 })
 local function work()
 	assert(lastTask and lastTask.Id, "нет задания: " .. tostring(lastTask and lastTask.Reason))

@@ -7,6 +7,8 @@ tx, ty, tz = map(float, sys.argv[3].split(','))   # точка, куда смо�
 dist, yaw, pitch = map(float, sys.argv[4].split(','))  # расстояние, азимут°, наклон°
 radius = float(sys.argv[5]) if len(sys.argv) > 5 else 300
 W, H = 1400, 900
+import os
+SKIP = set(filter(None, os.environ.get('SKIP', '').split(',')))  # например SKIP=Roof,Lamp для вида внутрь зданий
 yr, pr = math.radians(yaw), math.radians(pitch)
 cam = (tx + dist*math.cos(pr)*math.sin(yr), ty + dist*math.sin(pr), tz + dist*math.cos(pr)*math.cos(yr))
 fwd = [tx-cam[0], ty-cam[1], tz-cam[2]]; n = math.sqrt(sum(v*v for v in fwd)); fwd = [v/n for v in fwd]
@@ -37,7 +39,7 @@ for line in open(csv):
     name, shape = r[0], r[1]
     x, y, z = map(float, r[2:5]); rv = list(map(float, r[5:8])); uv = list(map(float, r[8:11])); lv = list(map(float, r[11:14]))
     sx, sy, sz = map(float, r[14:17]); col = tuple(int(float(v)) for v in r[17:20]); tr = float(r[20])
-    if tr >= 0.9 or name in ('Border',): continue
+    if tr >= 0.9 or name in ('Border',) or name in SKIP: continue
     if abs(x-tx) > radius or abs(z-tz) > radius: continue
     if name == 'Ground': sx = sz = min(sx, radius*2.5); x, z = tx, tz
     bk = [-v for v in lv]

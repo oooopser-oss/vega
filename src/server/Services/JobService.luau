@@ -160,6 +160,10 @@ function JobService.Select(player, jobId)
 		ctx.Net.Notify(player, "Эта работа недоступна для вашей роли.", "bad")
 		return
 	end
+	if job.Requires and not ctx.Progression.Meets(player, job.Requires) then
+		ctx.Net.Notify(player, "Для этой работы нужен аттестат: 5 уроков в Лицее №21 (см. GPS).", "bad")
+		return
+	end
 	if (player:GetAttribute("Jailed") or 0) > 0 then
 		ctx.Net.Notify(player, "Из тюрьмы на работу не ходят.", "bad")
 		return
@@ -191,7 +195,7 @@ local function complete(player, t)
 		return
 	end
 	JobService.DropCarry(player)
-	local pay = math.floor(job.Pay * ctx.Monetization.PayMultiplier(player))
+	local pay = math.floor(job.Pay * ctx.Monetization.PayMultiplier(player) * ctx.Progression.PayMultiplier(player, t.Job))
 	local mood = ""
 	if (player:GetAttribute("Fun") or 100) < 20 then
 		pay = math.floor(pay * 0.8)

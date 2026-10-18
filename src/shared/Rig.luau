@@ -33,6 +33,8 @@ Rig.Uniforms = {
 	clerk = { Shirt = Color3.fromRGB(70, 90, 140), Pants = Color3.fromRGB(40, 40, 50) },
 	cook = { Shirt = Color3.fromRGB(250, 250, 250), Pants = Color3.fromRGB(60, 60, 65), Hat = Color3.fromRGB(250, 250, 250) },
 	worker = { Shirt = Color3.fromRGB(240, 140, 30), Pants = Color3.fromRGB(50, 60, 90), Hat = Color3.fromRGB(240, 200, 40) },
+	coach = { Shirt = Color3.fromRGB(200, 40, 40), Pants = Color3.fromRGB(30, 30, 40) },
+	teacher = { Shirt = Color3.fromRGB(110, 90, 140), Pants = Color3.fromRGB(50, 50, 60) },
 }
 
 local function pick(list, rng)
