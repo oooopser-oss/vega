@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { Container } from "@/components/ui/Container";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
@@ -9,9 +10,9 @@ export const metadata: Metadata = {
 };
 
 const stats = [
-  { value: "600+", label: "смонтированных станций" },
-  { value: "8 лет", label: "на рынке автономной канализации" },
-  { value: "6", label: "брендов оборудования в наличии" },
+  { value: 600, suffix: "+", label: "смонтированных станций" },
+  { value: 8, suffix: " лет", label: "на рынке автономной канализации" },
+  { value: 6, suffix: "", label: "брендов оборудования в наличии" },
 ];
 
 export default function AboutPage() {
@@ -44,7 +45,9 @@ export default function AboutPage() {
         <div className="mt-16 grid gap-8 rounded-card bg-ink-50 p-8 sm:grid-cols-3">
           {stats.map((stat) => (
             <div key={stat.label}>
-              <p className="font-display text-3xl font-semibold text-ink-900">{stat.value}</p>
+              <p className="font-display text-3xl font-semibold text-ink-900">
+                <AnimatedNumber value={stat.value} suffix={stat.suffix} />
+              </p>
               <p className="mt-1 text-sm text-ink-500">{stat.label}</p>
             </div>
           ))}

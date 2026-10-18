@@ -1,12 +1,7 @@
 import { StarRating } from "@/components/ui/StarRating";
 import { Container } from "@/components/ui/Container";
+import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { reviews, getAverageRating } from "@/data/reviews";
-
-const stats = [
-  { value: "600+", label: "смонтированных станций" },
-  { value: "1-3 дня", label: "средний срок монтажа" },
-  { value: "до 5 лет", label: "гарантия на оборудование" },
-];
 
 export function TrustStrip() {
   const rating = getAverageRating();
@@ -21,12 +16,22 @@ export function TrustStrip() {
           </span>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2">
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center sm:text-left">
-              <p className="font-display text-xl font-semibold text-ink-900">{stat.value}</p>
-              <p className="text-[13px] text-ink-500">{stat.label}</p>
-            </div>
-          ))}
+          <div className="text-center sm:text-left">
+            <p className="font-display text-xl font-semibold text-ink-900">
+              <AnimatedNumber value={600} suffix="+" />
+            </p>
+            <p className="text-[13px] text-ink-500">смонтированных станций</p>
+          </div>
+          <div className="text-center sm:text-left">
+            <p className="font-display text-xl font-semibold text-ink-900">1-3 дня</p>
+            <p className="text-[13px] text-ink-500">средний срок монтажа</p>
+          </div>
+          <div className="text-center sm:text-left">
+            <p className="font-display text-xl font-semibold text-ink-900">
+              до <AnimatedNumber value={5} suffix=" лет" />
+            </p>
+            <p className="text-[13px] text-ink-500">гарантия на оборудование</p>
+          </div>
         </div>
       </Container>
     </section>

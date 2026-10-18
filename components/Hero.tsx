@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { Container } from "@/components/ui/Container";
 import { HeroActions } from "@/components/HeroActions";
+import { HeroParallaxImage } from "@/components/HeroParallaxImage";
 
 export function Hero() {
   return (
@@ -18,16 +18,7 @@ export function Hero() {
             <HeroActions />
           </div>
 
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-card lg:aspect-[5/4]">
-            <Image
-              src="/images/hero-house.jpg"
-              alt="Частный дом с установленной станцией очистки на участке"
-              fill
-              priority
-              sizes="(min-width: 1024px) 45vw, 100vw"
-              className="object-cover"
-            />
-          </div>
+          <HeroParallaxImage />
         </div>
       </Container>
     </section>
