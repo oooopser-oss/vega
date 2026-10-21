@@ -5,8 +5,10 @@ import { Container } from "@/components/ui/Container";
 import { Badge } from "@/components/ui/Badge";
 import { ProductVisual } from "@/components/ProductVisual";
 import { ProductActions } from "@/components/ProductActions";
+import { JsonLd } from "@/components/JsonLd";
 import { formatPrice } from "@/lib/format";
 import { products } from "@/data/products";
+import { siteConfig } from "@/config/site";
 
 export function generateStaticParams() {
   return products.map((p) => ({ slug: p.slug }));
@@ -43,6 +45,34 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   return (
     <section className="py-12 sm:py-16">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: product.name,
+          brand: { "@type": "Brand", name: product.brand },
+          description: product.shortDescription,
+          category: product.type,
+          offers: {
+            "@type": "Offer",
+            url: `${siteConfig.url}/catalog/${product.slug}`,
+            priceCurrency: "RUB",
+            price: product.price,
+            availability: "https://schema.org/InStock",
+            itemCondition: "https://schema.org/NewCondition",
+          },
+        }}
+      />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Каталог", item: `${siteConfig.url}/catalog` },
+            { "@type": "ListItem", position: 2, name: product.name, item: `${siteConfig.url}/catalog/${product.slug}` },
+          ],
+        }}
+      />
       <Container>
         <nav className="text-sm text-ink-500">
           <Link href="/catalog" className="hover:text-brand-700">

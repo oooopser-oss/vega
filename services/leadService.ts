@@ -1,4 +1,5 @@
 import { LeadFormPayload } from "@/types";
+import { trackLeadSubmit } from "@/lib/analytics";
 
 export interface SubmitResult {
   ok: boolean;
@@ -22,6 +23,7 @@ export async function submitLead(payload: LeadFormPayload): Promise<SubmitResult
       return { ok: false, error: "Не удалось отправить заявку. Попробуйте ещё раз." };
     }
 
+    trackLeadSubmit(payload.formType);
     return { ok: true };
   } catch {
     return { ok: false, error: "Проблема с соединением. Проверьте интернет и попробуйте снова." };

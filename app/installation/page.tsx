@@ -4,6 +4,7 @@ import { Container } from "@/components/ui/Container";
 import { InstallationSteps } from "@/components/InstallationSteps";
 import { FaqAccordion } from "@/components/FaqAccordion";
 import { InstallationCta } from "@/components/InstallationCta";
+import { JsonLd } from "@/components/JsonLd";
 import { faq } from "@/data/faq";
 
 export const metadata: Metadata = {
@@ -14,6 +15,17 @@ export const metadata: Metadata = {
 export default function InstallationPage() {
   return (
     <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: faq.map((item) => ({
+            "@type": "Question",
+            name: item.question,
+            acceptedAnswer: { "@type": "Answer", text: item.answer },
+          })),
+        }}
+      />
       <section className="py-12 sm:py-16">
         <Container>
           <div className="grid gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-center lg:gap-16">
