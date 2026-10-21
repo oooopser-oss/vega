@@ -1,8 +1,12 @@
 import { Container } from "@/components/ui/Container";
 import { HeroActions } from "@/components/HeroActions";
 import { HeroParallaxImage } from "@/components/HeroParallaxImage";
+import { formatPrice } from "@/lib/format";
+import { products } from "@/data/products";
 
 export function Hero() {
+  const minPrice = Math.min(...products.map((p) => p.price));
+
   return (
     <section className="bg-white pt-10 sm:pt-16">
       <Container>
@@ -14,6 +18,9 @@ export function Hero() {
             <p className="mt-5 max-w-md text-base leading-relaxed text-ink-600 sm:text-lg">
               Подбираем станцию под грунт и бюджет, монтируем своей бригадой и даём гарантию
               до 5 лет.
+            </p>
+            <p className="mt-3 text-sm text-ink-500">
+              Септики и станции от <span className="font-semibold text-ink-900">{formatPrice(minPrice)}</span> с доставкой
             </p>
             <HeroActions />
           </div>

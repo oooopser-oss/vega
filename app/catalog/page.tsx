@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
-import { ProductCard } from "@/components/ProductCard";
-import { Reveal } from "@/components/Reveal";
+import { CatalogBrowser } from "@/components/CatalogBrowser";
 import { products } from "@/data/products";
 
 export const metadata: Metadata = {
@@ -19,12 +18,8 @@ export default function CatalogPage() {
           количество пользователей.
         </p>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((product, i) => (
-            <Reveal key={product.slug} delay={(i % 3) * 80}>
-              <ProductCard product={product} />
-            </Reveal>
-          ))}
+        <div className="mt-10">
+          <CatalogBrowser products={products} />
         </div>
       </Container>
     </section>

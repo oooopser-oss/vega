@@ -13,8 +13,8 @@ export default function HomePage() {
     <>
       <Hero />
       <TrustStrip />
-      <Advantages />
       <CatalogPreview />
+      <Advantages />
       <InstallationSteps />
       <CalculatorSection />
       <PortfolioPreview />

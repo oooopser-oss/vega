@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CheckCircle } from "@phosphor-icons/react/ssr";
 import { Product } from "@/types";
 import { ProductVisual } from "@/components/ProductVisual";
 import { formatPrice } from "@/lib/format";
@@ -26,7 +27,18 @@ export function ProductCard({ product }: { product: Product }) {
         <Link href={`/catalog/${product.slug}`}>
           <h3 className="mt-1 text-lg font-semibold text-ink-900 hover:text-brand-700">{product.name}</h3>
         </Link>
-        <p className="mt-1.5 text-sm text-ink-500">{product.shortDescription}</p>
+
+        <div className="mt-3 flex items-baseline gap-2">
+          <span className="font-display text-3xl font-semibold text-ink-900">{formatPrice(product.price)}</span>
+          {product.oldPrice && (
+            <span className="text-sm text-ink-500 line-through">{formatPrice(product.oldPrice)}</span>
+          )}
+        </div>
+        <p className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-brand-700">
+          <CheckCircle size={16} weight="fill" />В наличии, доставка 1-2 дня
+        </p>
+
+        <p className="mt-3 text-sm text-ink-500">{product.shortDescription}</p>
 
         <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
           <div>
@@ -39,22 +51,15 @@ export function ProductCard({ product }: { product: Product }) {
           </div>
         </dl>
 
-        <div className="mt-4 flex items-baseline gap-2">
-          <span className="font-display text-2xl font-semibold text-ink-900">{formatPrice(product.price)}</span>
-          {product.oldPrice && (
-            <span className="text-sm text-ink-500 line-through">{formatPrice(product.oldPrice)}</span>
-          )}
-        </div>
-
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <Link href={`/catalog/${product.slug}`} className="btn-outline flex-1 !py-2.5 text-sm">
             Подробнее
           </Link>
           <button
-            onClick={() => openLeadModal("estimate", { source: "catalog-card", productSlug: product.slug })}
+            onClick={() => openLeadModal("product", { source: "catalog-card", productSlug: product.slug })}
             className="btn-primary flex-1 !py-2.5 text-sm"
           >
-            Рассчитать
+            Заказать
           </button>
         </div>
       </div>
