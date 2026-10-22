@@ -49,6 +49,39 @@ do
 			Rig.Place(rig, roblox0.CFrame.new(cx - 18 + i * 4.5, 0.4, cz) * roblox0.CFrame.Angles(0, math.pi, 0), 0)
 		end
 	end
+	-- Обставленный дом №1 (5-й аргумент "home"): полный набор мебели и отделки.
+	if process.args[5] == "home" then
+		local Shared = H.wrap(H.place:GetService("ReplicatedStorage")).Shared
+		local Config = req(Shared.Config)
+		local Furniture = req(Shared.Furniture)
+		local houseModel = H.wrap(H.place:GetService("Workspace")):FindFirstChild("House1", true)
+		local lawn = houseModel:FindFirstChild("Lawn")
+		local base = lawn.CFrame * roblox0.CFrame.new(0, -0.05, 0)
+		local layout = {
+			{ Id = "sofa", X = 9, Z = -5.5, R = 0 }, { Id = "rug", X = 4, Z = -5, R = 0 }, { Id = "coffee_table", X = 9, Z = -1.5, R = 0 },
+			{ Id = "bookshelf", X = 0, Z = -15, R = 0 }, { Id = "piano", X = -1, Z = -9.5, R = 0 }, { Id = "fireplace", X = 5.5, Z = -14.75, R = 0 },
+			{ Id = "armchair", X = 3, Z = -1, R = 0 }, { Id = "floor_lamp", X = 13.2, Z = -9.5, R = 0 }, { Id = "plant", X = -8.5, Z = -5.5, R = 0 },
+			{ Id = "painting", X = -4, Z = -15.6, R = 0 }, { Id = "table_round", X = -4, Z = -1, R = 0 },
+			{ Id = "pool", X = -14.5, Z = 13, R = 0 }, { Id = "hot_tub", X = 17, Z = 10, R = 0 }, { Id = "bench_garden", X = 15, Z = 18.5, R = 2 },
+			{ Id = "flowers", X = -9, Z = 20.5, R = 0 }, { Id = "grill", X = -19, Z = -2, R = 1 }, { Id = "trampoline", X = 9.5, Z = 13.5, R = 0 },
+			{ Id = "swing", X = 19, Z = -6, R = 1 }, { Id = "lantern", X = -7.5, Z = 7, R = 0 }, { Id = "gnome", X = -4, Z = 12, R = 0 },
+			{ Id = "garden_bed", X = -19, Z = -12, R = 1 },
+		}
+		local furn = houseModel:FindFirstChild("Furniture")
+		for _, c in furn:GetChildren() do c:Destroy() end
+		local placed = {}
+		for _, e in layout do
+			local ok, why = Furniture.Check(placed, e.Id, e.X, e.Z, e.R)
+			if not ok then print("НЕЛЬЗЯ", e.Id, why) end
+			table.insert(placed, e)
+			Furniture.Build(e.Id, Furniture.ItemCFrame(base, e)).Parent = furn
+		end
+		for _, w in houseModel:GetChildren() do
+			if w.Name == "Floor" then w.Color = Config.Home.Styles.Floor[3].Color end
+			if w.Name == "Wall" then w.Color = Config.Home.Styles.Wall[3].Color end
+		end
+		print("home at", base.Position, "yaw", select(2, base:ToOrientation()), "comfort", Furniture.Comfort(placed))
+	end
 	print("ambient", Ambient.Snapshot(folder, roblox0.Vector3.new(cx, 0, cz), tonumber(process.args[3] or "30"), tonumber(process.args[4] or "45")))
 end
 local fs = require("@lune/fs")

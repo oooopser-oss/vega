@@ -41,7 +41,7 @@ local function generate(player, data)
 			if table.find(def.Role, role) then
 				table.insert(roleKinds, kind)
 			end
-		elseif kind ~= "drive" or next(data.Cars) ~= nil or Config.Roles[role].CanArrest then
+		elseif (kind ~= "drive" or next(data.Cars) ~= nil or Config.Roles[role].CanArrest) and (not def.NeedsHouse or data.HasHouse) then
 			table.insert(common, kind)
 		end
 	end

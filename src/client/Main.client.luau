@@ -16,6 +16,7 @@ local CarController = require(script.Parent:WaitForChild("CarController"))
 local Ambient = require(script.Parent:WaitForChild("Ambient"))
 local Weather = require(script.Parent:WaitForChild("Weather"))
 local MiniGames = require(script.Parent:WaitForChild("MiniGames"))
+local HomeEditor = require(script.Parent:WaitForChild("HomeEditor"))
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local ActionRemote = Remotes:WaitForChild("Action")
@@ -40,6 +41,7 @@ local state = {
 	Progress = { Skills = {}, Education = { School = 0, College = 0 }, Records = {} },
 	Course = nil,
 	SelectedPerson = nil,
+	Home = { HouseId = 0, Items = {}, Style = {}, Unlocked = {} },
 }
 
 local gui = new("ScreenGui", {
@@ -811,27 +813,61 @@ end
 renderers["Дом"] = function(c)
 	local houseId = player:GetAttribute("HouseId") or 0
 	local owns = player:GetAttribute("HasHouse") == true
+	local home = state.Home
 	section(c, 1, "Недвижимость")
 	if houseId > 0 then
-		Ui.label({ LayoutOrder = 2, Text = "Ваш дом: №" .. houseId .. (owns and "" or " (дом супруга/супруги)"), Font = Enum.Font.GothamBold, Parent = c })
-		Ui.label({ LayoutOrder = 3, TextSize = 13, TextColor3 = T.Sub, Size = UDim2.new(1, -8, 0, 40), Text = "Дома можно спать, принимать душ, смотреть ТВ и перекусить из холодильника. Вы появляетесь дома после входа.", Parent = c })
+		Ui.label({ LayoutOrder = 2, Text = "Ваш дом: №" .. houseId .. (owns and "" or " (дом супруга/супруги)") .. "   •   Уют: " .. (home.Comfort or 0) .. "/100", Font = Enum.Font.GothamBold, Parent = c })
+		local bg, fill = Ui.bar(c, Color3.fromRGB(240, 170, 80), 10)
+		bg.LayoutOrder = 3
+		bg.Size = UDim2.new(1, -8, 0, 10)
+		fill.Size = UDim2.fromScale(math.clamp((home.Comfort or 0) / 100, 0, 1), 1)
+		Ui.label({ LayoutOrder = 4, TextSize = 13, TextColor3 = T.Sub, Size = UDim2.new(1, -8, 0, 40), Text = "Чем уютнее дом, тем быстрее восстанавливаются энергия, гигиена и настроение (до ×2). Мебель с ✨ приносит пользу: еда, навыки, отдых.", Parent = c })
+		Ui.button("🛠 Обустроить дом (мебель, перестановка)", T.Good, function()
+			closeModal()
+			HomeEditor.Start({ Gui = gui, Ui = Ui, Send = send, Notify = notify, Home = state.Home, Scale = scaleIt })
+		end, { LayoutOrder = 5, Size = UDim2.new(1, -8, 0, 36), Parent = c })
+		Ui.button(home.Open and "🚪 Гости: дом открыт (закрыть)" or "🔒 Гости: дом закрыт (открыть для гостей)", home.Open and T.Warn or T.Bg3, function()
+			send("HomeOpen", { Open = not home.Open })
+		end, { LayoutOrder = 6, Size = UDim2.new(1, -8, 0, 34), Parent = c })
 		Ui.button("📍 Показать дорогу домой", T.Accent, function()
 			send("GoHome")
 			closeModal()
-		end, { LayoutOrder = 4, Size = UDim2.new(1, -8, 0, 34), Parent = c })
+		end, { LayoutOrder = 7, Size = UDim2.new(1, -8, 0, 34), Parent = c })
+		-- Отделка дома.
+		local S = Config.Home.Styles
+		local order = 20
+		section(c, order, "Отделка" .. (home.Designer and " (бесплатно с пассом «Дизайнер интерьеров»)" or ""))
+		for _, kind in S.Order do
+			order += 1
+			local r = new("Frame", { LayoutOrder = order, BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 34), Parent = c }, { Ui.list(5, true) })
+			Ui.label({ Text = S.Names[kind], Font = Enum.Font.GothamBold, TextSize = 14, Size = UDim2.fromOffset(70, 34), Parent = r })
+			local current = (home.Style and home.Style[kind]) or 0
+			Ui.button(current == 0 and "✓" or "↺", current == 0 and T.Accent or T.Bg3, function()
+				send("HomeStyle", { Kind = kind, Index = 0 })
+			end, { Size = UDim2.fromOffset(34, 34), TextSize = 14, Parent = r })
+			for i, choice in S[kind] do
+				local b = Ui.button(current == i and "✓" or "", choice.Color, function()
+					send("HomeStyle", { Kind = kind, Index = i })
+				end, { Size = UDim2.fromOffset(34, 34), Parent = r })
+				b.MouseEnter:Connect(function()
+					notify(S.Names[kind] .. ": " .. choice.Name .. " — " .. (home.Designer and "бесплатно" or Ui.money(choice.Price)), "info")
+				end)
+			end
+		end
+		Ui.label({ LayoutOrder = order + 1, TextSize = 12, TextColor3 = T.Sub, Size = UDim2.new(1, -8, 0, 30), Text = "↺ — вернуть исходный вид. Наведите на цвет, чтобы увидеть название и цену.", Parent = c })
 	elseif owns then
 		Ui.label({ LayoutOrder = 2, Text = "У вас есть дом, но на этом сервере нет свободного участка.", TextColor3 = T.Warn, Size = UDim2.new(1, -8, 0, 40), Parent = c })
 	else
 		Ui.label({ LayoutOrder = 2, Text = "У вас нет дома. Цена: " .. Ui.money(Config.HousePrice), Font = Enum.Font.GothamBold, Parent = c })
-		Ui.label({ LayoutOrder = 3, TextSize = 13, TextColor3 = T.Sub, Size = UDim2.new(1, -8, 0, 40), Text = "Купить дом можно в агентстве недвижимости в мэрии. После свадьбы супруги живут в одном доме.", Parent = c })
+		Ui.label({ LayoutOrder = 3, TextSize = 13, TextColor3 = T.Sub, Size = UDim2.new(1, -8, 0, 40), Text = "Купить дом можно в агентстве недвижимости в мэрии. Дом можно обставить мебелью и перекрасить. После свадьбы супруги живут в одном доме.", Parent = c })
 		Ui.button("Купить дом (нужно быть в мэрии)", T.Good, function()
 			send("BuyHouse")
 		end, { LayoutOrder = 4, Size = UDim2.new(1, -8, 0, 34), Parent = c })
 	end
 	if owns then
-		Ui.button("Продать дом (вернётся " .. Ui.money(Config.HousePrice * Config.HouseSellRefund) .. ")", T.Bad, function()
+		Ui.button("Продать дом (вернётся " .. Ui.money(Config.HousePrice * Config.HouseSellRefund) .. ", мебель продаётся вместе с домом)", T.Bad, function()
 			send("SellHouse")
-		end, { LayoutOrder = 10, Size = UDim2.new(1, -8, 0, 34), Parent = c })
+		end, { LayoutOrder = 100, Size = UDim2.new(1, -8, 0, 34), TextSize = 13, Parent = c })
 	end
 end
 
@@ -902,6 +938,7 @@ function openPhone(tab)
 	send("GetState")
 	send("GetQuests")
 	send("GetProgress")
+	send("GetHome")
 	local _, body = openWindow("Phone", "📱 Телефон", 700, 520)
 	local tabs = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(0, 130, 1, 0), Parent = body }, { Ui.list(6) })
 	for i, name in TABS do
@@ -1122,6 +1159,14 @@ local handlers = {
 			alertCount += 1
 			setMarker("alert" .. alertCount, p.Position, "🚨 Вызов", Color3.fromRGB(255, 70, 70), 40)
 		end
+	end,
+	Home = function(p)
+		state.Home = p
+		HomeEditor.Update(p)
+		if (p.HouseId or 0) == 0 and HomeEditor.Active() then
+			HomeEditor.Stop()
+		end
+		rerenderPhone("Дом")
 	end,
 	DoorBell = function(p)
 		notify("🔔 " .. p.From .. " звонит в дверь вашего дома №" .. p.House, "info")

@@ -216,6 +216,7 @@ Config.Quests = {
 		train = { Text = "Позанимайтесь в секциях %d раз(а) (спорткомплекс, стадион)", Goals = { 2, 3 }, Reward = 150 },
 		study = { Text = "Посетите %d урок(а) в лицее или колледже", Goals = { 1, 2 }, Reward = 250 },
 		fish = { Text = "Поймайте %d рыб(ы) на пруду", Goals = { 2, 4 }, Reward = 120 },
+		decor = { Text = "Обустройте дом: поставьте %d вещь(и) мебели", Goals = { 1, 2 }, Reward = 150, NeedsHouse = true },
 		arrest = { Text = "Задержите %d преступника(ов)", Goals = { 1, 2 }, Reward = 500, Role = { "Police", "SWAT" } },
 		heal = { Text = "Окажите помощь %d пациентам", Goals = { 2, 4 }, Reward = 200, Role = { "Medic" } },
 		rob = { Text = "Совершите %d ограбление(я) и не попадитесь", Goals = { 1, 2 }, Reward = 400, Role = { "Criminal" } },
@@ -396,5 +397,151 @@ Config.Fish = {
 }
 
 Config.Busking = { Interval = 6, MinTip = 3, MaxTip = 9, DailyCap = 900 }
+
+-- Обустройство дома: мебель, отделка, уют.
+-- Координаты — в системе участка (центр участка 0,0; фасад дома смотрит в +Z).
+-- Size = { ширина по X, глубина по Z } до поворота; Zone "in" — в доме, "out" — во дворе.
+-- Flat — плоские вещи (ковёр, картина): не мешают другой мебели.
+-- Use — польза: Sleep/Shower/Watch — длительное занятие, Instant — разовый эффект,
+-- Skill — опыт навыка, Wardrobe — переодевание. Robux — премиум (товар «Furn_<id>»).
+Config.Home = {
+	MaxItems = 45,
+	SellRefund = 0.5,
+	EditRange = 45, -- как далеко от центра участка можно расставлять мебель
+	FloorY = { In = 1.15, Out = 0.2 },
+	Zones = {
+		In = { -14, 14, -16, 4 },
+		Out = { -22.3, 22.3, -22.3, 22.3 },
+	},
+	-- Встроенные вещи дома (кровать, душ, ТВ, холодильник, кухня, проход у двери) и двор.
+	Blocked = {
+		In = { { -12, -6, -16, -7 }, { 9, 14, -16, -11 }, { 5.5, 12.5, 2.8, 4 }, { -14, -10.75, 0.25, 3.75 }, { -14, -10.75, -7.5, -0.5 }, { -3, 3, 2, 4 } },
+		Out = { { -16, 16, -18, 6 }, { -6.5, 6.5, 5, 10 }, { -2.5, 2.5, 5, 23 }, { -19.5, -14.5, -21.5, -16.5 }, { -4.5, 4.5, 20, 23 } },
+	},
+	-- Мебель нового дома (её можно переставить или продать).
+	Default = {
+		{ Id = "sofa", X = 9, Z = -5.5, R = 0 },
+		{ Id = "table_round", X = -4, Z = -1, R = 0 },
+		{ Id = "rug", X = 4, Z = -5, R = 0 },
+		{ Id = "flowers", X = -14, Z = 14, R = 0 },
+		{ Id = "flowers", X = 14, Z = 14, R = 0 },
+		{ Id = "bench_garden", X = 15, Z = 18.5, R = 2 },
+	},
+	Categories = { "Гостиная", "Спальня и ванная", "Кухня", "Хобби", "Декор", "Двор", "Премиум ⭐" },
+	Items = {
+		-- Гостиная
+		sofa = { Name = "Диван", Cat = "Гостиная", Price = 600, Size = { 8, 3.5 }, Comfort = 6, Zone = "in" },
+		armchair = { Name = "Кресло", Cat = "Гостиная", Price = 300, Size = { 3.5, 3.5 }, Comfort = 3, Zone = "in" },
+		table_round = { Name = "Обеденный стол", Cat = "Гостиная", Price = 250, Size = { 5, 5 }, Comfort = 2, Zone = "in" },
+		coffee_table = { Name = "Журнальный столик", Cat = "Гостиная", Price = 150, Size = { 4, 2.5 }, Comfort = 1, Zone = "in" },
+		rug = { Name = "Ковёр", Cat = "Гостиная", Price = 120, Size = { 10, 7 }, Comfort = 2, Zone = "in", Flat = true },
+		tv_big = { Name = "Большой телевизор", Cat = "Гостиная", Price = 1500, Size = { 8, 1.5 }, Comfort = 4, Zone = "in",
+			Use = { Type = "Watch", Need = "Fun", Rate = 5, Range = 16, Text = "Смотреть кино" } },
+		console = { Name = "Игровая приставка", Cat = "Гостиная", Price = 900, Size = { 3, 2 }, Comfort = 3, Zone = "in",
+			Use = { Type = "Watch", Need = "Fun", Rate = 6, Range = 12, Text = "Поиграть" } },
+		fireplace = { Name = "Камин", Cat = "Гостиная", Price = 1800, Size = { 6, 2.5 }, Comfort = 10, Zone = "in" },
+		floor_lamp = { Name = "Торшер", Cat = "Гостиная", Price = 120, Size = { 1.5, 1.5 }, Comfort = 2, Zone = "in" },
+		-- Спальня и ванная
+		bed_double = { Name = "Двуспальная кровать", Cat = "Спальня и ванная", Price = 1400, Size = { 8, 10 }, Comfort = 6, Zone = "in",
+			Use = { Type = "Sleep", Need = "Energy", Rate = 9, Text = "Спать" } },
+		nightstand = { Name = "Тумбочка с лампой", Cat = "Спальня и ванная", Price = 150, Size = { 2, 2 }, Comfort = 1, Zone = "in" },
+		wardrobe = { Name = "Шкаф-купе", Cat = "Спальня и ванная", Price = 700, Size = { 6, 2.5 }, Comfort = 2, Zone = "in",
+			Use = { Type = "Wardrobe", Text = "Переодеться" } },
+		bathtub = { Name = "Ванна", Cat = "Спальня и ванная", Price = 1100, Size = { 7, 3.5 }, Comfort = 5, Zone = "in",
+			Use = { Type = "Shower", Need = "Hygiene", Rate = 12, Text = "Принять ванну" } },
+		-- Кухня
+		stove = { Name = "Плита", Cat = "Кухня", Price = 800, Size = { 3.5, 3 }, Comfort = 2, Zone = "in",
+			Use = { Type = "Instant", Effects = { Hunger = 30 }, Cooldown = 150, Text = "Приготовить ужин" } },
+		coffee_machine = { Name = "Кофемашина", Cat = "Кухня", Price = 400, Size = { 2, 2 }, Comfort = 1, Zone = "in",
+			Use = { Type = "Instant", Effects = { Energy = 12, Fun = 2 }, Cooldown = 120, Text = "Выпить кофе" } },
+		chair = { Name = "Стул", Cat = "Кухня", Price = 80, Size = { 2, 2 }, Comfort = 1, Zone = "in" },
+		-- Хобби (опыт навыков дома, но реже, чем в секциях)
+		bookshelf = { Name = "Книжный шкаф", Cat = "Хобби", Price = 500, Size = { 5, 1.8 }, Comfort = 3, Zone = "in",
+			Use = { Type = "Skill", Skill = "Intellect", XP = 6, Effects = { Fun = 3 }, Cooldown = 90, Text = "Почитать" } },
+		computer = { Name = "Компьютерный стол", Cat = "Хобби", Price = 1200, Size = { 5, 3 }, Comfort = 2, Zone = "in",
+			Use = { Type = "Skill", Skill = "Intellect", XP = 5, Effects = { Fun = 4 }, Cooldown = 90, Text = "Посидеть за ПК" } },
+		chess_set = { Name = "Шахматный столик", Cat = "Хобби", Price = 350, Size = { 3, 3 }, Comfort = 2, Zone = "in",
+			Use = { Type = "Skill", Skill = "Intellect", XP = 4, Effects = { Fun = 4 }, Cooldown = 90, Text = "Решить задачу" } },
+		guitar_stand = { Name = "Гитара на стойке", Cat = "Хобби", Price = 600, Size = { 2, 2 }, Comfort = 2, Zone = "in",
+			Use = { Type = "Skill", Skill = "Music", XP = 6, Effects = { Fun = 4 }, Cooldown = 90, Text = "Поиграть на гитаре" } },
+		home_gym = { Name = "Штанга и скамья", Cat = "Хобби", Price = 900, Size = { 6, 3 }, Comfort = 1, Zone = "in",
+			Use = { Type = "Skill", Skill = "Strength", XP = 6, Effects = { Energy = -4 }, Cooldown = 90, Text = "Потренироваться" } },
+		treadmill = { Name = "Беговая дорожка", Cat = "Хобби", Price = 1000, Size = { 3, 6 }, Comfort = 1, Zone = "in",
+			Use = { Type = "Skill", Skill = "Stamina", XP = 6, Effects = { Energy = -4 }, Cooldown = 90, Text = "Пробежка" } },
+		-- Декор
+		plant = { Name = "Фикус в кадке", Cat = "Декор", Price = 90, Size = { 2, 2 }, Comfort = 2, Zone = "in" },
+		painting = { Name = "Картина", Cat = "Декор", Price = 200, Size = { 4, 0.6 }, Comfort = 2, Zone = "in", Flat = true },
+		aquarium = { Name = "Аквариум", Cat = "Декор", Price = 1300, Size = { 5, 2 }, Comfort = 8, Zone = "in" },
+		clock = { Name = "Напольные часы", Cat = "Декор", Price = 450, Size = { 1.8, 1.5 }, Comfort = 3, Zone = "in" },
+		-- Двор
+		flowers = { Name = "Клумба", Cat = "Двор", Price = 80, Size = { 8, 3 }, Comfort = 2, Zone = "out" },
+		bench_garden = { Name = "Садовая скамейка", Cat = "Двор", Price = 150, Size = { 6, 2.5 }, Comfort = 2, Zone = "out" },
+		grill = { Name = "Мангал", Cat = "Двор", Price = 500, Size = { 4, 2 }, Comfort = 2, Zone = "out",
+			Use = { Type = "Instant", Effects = { Hunger = 35, Fun = 5 }, Cooldown = 180, Text = "Пожарить шашлык" } },
+		swing = { Name = "Садовые качели", Cat = "Двор", Price = 700, Size = { 6, 3 }, Comfort = 4, Zone = "out" },
+		trampoline = { Name = "Батут", Cat = "Двор", Price = 600, Size = { 7, 7 }, Comfort = 2, Zone = "out",
+			Use = { Type = "Instant", Effects = { Fun = 12, Energy = -3 }, Cooldown = 40, Text = "Попрыгать" } },
+		garden_bed = { Name = "Грядка", Cat = "Двор", Price = 100, Size = { 6, 3 }, Comfort = 1, Zone = "out",
+			Use = { Type = "Instant", Effects = { Hunger = 10, Fun = 3 }, Cooldown = 300, Text = "Собрать урожай" } },
+		gnome = { Name = "Садовый гном", Cat = "Двор", Price = 60, Size = { 1.2, 1.2 }, Comfort = 1, Zone = "out" },
+		lantern = { Name = "Садовый фонарь", Cat = "Двор", Price = 150, Size = { 1.2, 1.2 }, Comfort = 1, Zone = "out" },
+		-- Премиум (Robux)
+		neon_sofa = { Name = "Неоновый диван", Cat = "Премиум ⭐", Robux = 59, Size = { 8, 3.5 }, Comfort = 10, Zone = "in" },
+		gold_bed = { Name = "Золотая кровать", Cat = "Премиум ⭐", Robux = 79, Size = { 8, 10 }, Comfort = 12, Zone = "in",
+			Use = { Type = "Sleep", Need = "Energy", Rate = 12, Text = "Спать" } },
+		piano = { Name = "Рояль", Cat = "Премиум ⭐", Robux = 99, Size = { 6, 7 }, Comfort = 10, Zone = "in",
+			Use = { Type = "Skill", Skill = "Music", XP = 10, Effects = { Fun = 6 }, Cooldown = 90, Text = "Сыграть на рояле" } },
+		arcade = { Name = "Игровой автомат", Cat = "Премиум ⭐", Robux = 49, Size = { 3, 3 }, Comfort = 6, Zone = "in",
+			Use = { Type = "Watch", Need = "Fun", Rate = 8, Range = 10, Text = "Играть" } },
+		home_cinema = { Name = "Домашний кинотеатр", Cat = "Премиум ⭐", Robux = 129, Size = { 10, 1.5 }, Comfort = 14, Zone = "in",
+			Use = { Type = "Watch", Need = "Fun", Rate = 9, Range = 18, Text = "Смотреть фильм" } },
+		hot_tub = { Name = "Джакузи", Cat = "Премиум ⭐", Robux = 99, Size = { 8, 8 }, Comfort = 10, Zone = "out",
+			Use = { Type = "Shower", Need = "Hygiene", Rate = 14, Text = "Понежиться в джакузи" } },
+		pool = { Name = "Бассейн", Cat = "Премиум ⭐", Robux = 149, Size = { 14, 9 }, Comfort = 14, Zone = "out",
+			Use = { Type = "Instant", Effects = { Fun = 15, Hygiene = 10 }, Cooldown = 60, Text = "Поплавать" } },
+	},
+	-- Отделка. Index 0 — исходный вид дома (бесплатно).
+	Styles = {
+		Order = { "Wall", "Floor", "Roof", "Fence" },
+		Names = { Wall = "Стены", Floor = "Пол", Roof = "Крыша", Fence = "Забор" },
+		Wall = {
+			{ Name = "Белый", Color = Color3.fromRGB(245, 243, 235), Price = 400 },
+			{ Name = "Персиковый", Color = Color3.fromRGB(245, 200, 170), Price = 400 },
+			{ Name = "Голубой", Color = Color3.fromRGB(170, 205, 235), Price = 400 },
+			{ Name = "Мятный", Color = Color3.fromRGB(180, 230, 200), Price = 400 },
+			{ Name = "Лавандовый", Color = Color3.fromRGB(205, 190, 235), Price = 400 },
+			{ Name = "Графит", Color = Color3.fromRGB(80, 85, 95), Price = 600 },
+			{ Name = "Красный кирпич", Color = Color3.fromRGB(165, 85, 65), Material = "Brick", Price = 900 },
+			{ Name = "Деревянный сруб", Color = Color3.fromRGB(160, 115, 70), Material = "WoodPlanks", Price = 900 },
+		},
+		Floor = {
+			{ Name = "Светлый паркет", Color = Color3.fromRGB(215, 180, 135), Material = "WoodPlanks", Price = 300 },
+			{ Name = "Тёмный паркет", Color = Color3.fromRGB(110, 70, 45), Material = "WoodPlanks", Price = 300 },
+			{ Name = "Мрамор", Color = Color3.fromRGB(235, 235, 240), Material = "Marble", Price = 1200 },
+			{ Name = "Ковролин", Color = Color3.fromRGB(120, 130, 160), Material = "Fabric", Price = 500 },
+			{ Name = "Плитка", Color = Color3.fromRGB(200, 195, 185), Material = "Slate", Price = 600 },
+		},
+		Roof = {
+			{ Name = "Красная черепица", Color = Color3.fromRGB(165, 55, 45), Price = 500 },
+			{ Name = "Синяя", Color = Color3.fromRGB(60, 85, 130), Price = 500 },
+			{ Name = "Зелёная", Color = Color3.fromRGB(65, 115, 75), Price = 500 },
+			{ Name = "Графитовая", Color = Color3.fromRGB(55, 55, 60), Price = 500 },
+			{ Name = "Медная", Color = Color3.fromRGB(190, 120, 70), Material = "Metal", Price = 900 },
+		},
+		Fence = {
+			{ Name = "Белый", Color = Color3.fromRGB(250, 250, 245), Price = 200 },
+			{ Name = "Натуральное дерево", Color = Color3.fromRGB(150, 105, 65), Price = 200 },
+			{ Name = "Зелёный", Color = Color3.fromRGB(70, 120, 80), Price = 200 },
+			{ Name = "Кованый чёрный", Color = Color3.fromRGB(35, 35, 40), Material = "Metal", Price = 500 },
+		},
+	},
+}
+for id, item in Config.Home.Items do
+	if item.Robux then
+		Config.Monetization.Products["Furn_" .. id] = { Id = 0, Name = item.Name, Robux = item.Robux, Furniture = id }
+	end
+end
+Config.Monetization.GamePasses.Designer = { Id = 0, Name = "Дизайнер интерьеров", Robux = 349, Description = "Вся премиум-мебель (рояль, джакузи, бассейн, кинотеатр…) и любая отделка дома бесплатно." }
+table.insert(Config.Monetization.PassOrder, "Designer")
 
 return Config

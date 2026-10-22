@@ -49,6 +49,18 @@ HousingService.AccessibleHouse = accessibleHouse
 local function canUse(player, house)
 	return accessibleHouse(player) == house
 end
+HousingService.CanUse = canUse
+
+function HousingService.OwnerOf(houseId)
+	return owners[houseId]
+end
+
+-- Мебель, отделка и уют дома перестраиваются при смене владельца.
+local function homeChanged(house)
+	if ctx.Home then
+		ctx.Home.Render(house)
+	end
+end
 
 local function refreshSign(house)
 	local owner = owners[house.Id]
@@ -71,9 +83,14 @@ function HousingService.RefreshFor(player)
 	if house then
 		refreshSign(house)
 	end
-	player:SetAttribute("HouseId", (accessibleHouse(player) or {}).Id or 0)
+	local accessible = accessibleHouse(player)
+	player:SetAttribute("HouseId", (accessible or {}).Id or 0)
 	local data = ctx.Data.Get(player)
 	player:SetAttribute("HasHouse", data ~= nil and data.HasHouse == true)
+	if ctx.Home then
+		player:SetAttribute("HomeComfort", accessible and ctx.Home.ComfortOf(accessible) or 0)
+		ctx.Home.Send(player)
+	end
 end
 
 local function claimPlot(player)
@@ -81,6 +98,7 @@ local function claimPlot(player)
 		if not owners[house.Id] then
 			owners[house.Id] = player
 			refreshSign(house)
+			homeChanged(house)
 			return house
 		end
 	end
@@ -109,6 +127,7 @@ function HousingService.OnPlayerRemoving(player)
 			owners[id] = nil
 			local house = ctx.World.Houses[id]
 			refreshSign(house)
+			homeChanged(house)
 			house.Door.CanCollide = true
 			house.Door.Transparency = 0
 		end
@@ -138,7 +157,7 @@ function HousingService.Init(c)
 	for _, house in ctx.World.Houses do
 		refreshSign(house)
 		MakePrompt(house.Door, "Открыть дверь", "Дом №" .. house.Id, 0, 8).Triggered:Connect(function(player)
-			if canUse(player, house) then
+			if canUse(player, house) or (ctx.Home and ctx.Home.IsOpen(house)) then
 				openDoor(house)
 			else
 				local owner = owners[house.Id]
@@ -159,14 +178,18 @@ function HousingService.Init(c)
 				fn(player)
 			end)
 		end
+		-- Уют дома ускоряет отдых (до ×2).
+		local function comfort()
+			return ctx.Home and ctx.Home.ComfortMult(house) or 1
+		end
 		homeAction(house.Bed, "Спать", function(player)
-			ctx.Needs.StartActivity(player, "Sleep", house.Bed, "Energy", 6, { Heal = true })
+			ctx.Needs.StartActivity(player, "Sleep", house.Bed, "Energy", 6 * comfort(), { Heal = true })
 		end)
 		homeAction(house.Shower, "Принять душ", function(player)
-			ctx.Needs.StartActivity(player, "Shower", house.Shower, "Hygiene", 8)
+			ctx.Needs.StartActivity(player, "Shower", house.Shower, "Hygiene", 8 * comfort())
 		end)
 		homeAction(house.TV, "Смотреть ТВ", function(player)
-			ctx.Needs.StartActivity(player, "TV", house.TV, "Fun", 3)
+			ctx.Needs.StartActivity(player, "TV", house.TV, "Fun", 3 * comfort())
 			Net.Notify(player, "Вы смотрите телевизор. Отойдите или нажмите «Встать», чтобы закончить.", "info")
 		end)
 		homeAction(house.Fridge, "Перекусить", function(player)
@@ -236,7 +259,13 @@ function HousingService.Init(c)
 			if owner == player then
 				owners[id] = nil
 				refreshSign(ctx.World.Houses[id])
+				homeChanged(ctx.World.Houses[id])
 			end
+		end
+		-- Мебель продаётся вместе с домом; премиум-вещи остаются открытыми.
+		if type(data.Home) == "table" then
+			data.Home.Items = nil
+			data.Home.Style = nil
 		end
 		HousingService.RefreshFor(player)
 		local partner = partnerPlayer(player)

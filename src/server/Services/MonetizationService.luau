@@ -139,6 +139,9 @@ function MonetizationService.OnPlayerAdded(player)
 		if ctx.Clothing then
 			ctx.Clothing.Send(player)
 		end
+		if ctx.Home then
+			ctx.Home.Send(player)
+		end
 	end)
 end
 
@@ -167,6 +170,9 @@ function MonetizationService.Init(c)
 		if product.Clothing then
 			ctx.Clothing.Grant(player, product.Clothing)
 		end
+		if product.Furniture then
+			ctx.Home.Unlock(player, product.Furniture)
+		end
 		if product.Fireworks then
 			MonetizationService.Fireworks(player)
 			ctx.Net.NotifyAll("🎆 " .. player.DisplayName .. " запустил(а) салют над Первоуральском!", "info")
@@ -183,6 +189,7 @@ function MonetizationService.Init(c)
 			applyPass(player, key)
 			grantPassReward(player, key)
 			ctx.Clothing.Send(player)
+			ctx.Home.Send(player)
 			ctx.Net.Notify(player, "Спасибо! Пасс «" .. M.GamePasses[key].Name .. "» активирован.", "good")
 		end
 	end)

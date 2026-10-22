@@ -115,7 +115,7 @@ function NeedsService.StartActivity(player, kind, target, need, rate, opts)
 			if not activities[player] or activities[player].Token ~= token then
 				return
 			end
-			if not Util.Alive(player) or (kind == "TV" and not Util.Near(player, target, 14)) then
+			if not Util.Alive(player) or (kind == "TV" and not Util.Near(player, target, opts.Range or 14)) then
 				break
 			end
 			NeedsService.Change(player, need, rate)

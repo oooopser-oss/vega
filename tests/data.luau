@@ -16,7 +16,8 @@ local p = { UserId = 9, Name = "Old", GetAttribute = function(_, k) return attrs
 local d = DS.Load(p)
 print("version", d.Version, "cash", d.Cash, "bank", d.Bank, "car", d.Cars.sport, "partner", d.Partner, "house", d.HasHouse, "bonusFlag", d.RegistrationBonusGiven, "questsDone", d.Stats.QuestsDone, "energy", d.Needs.Energy)
 assert(d.License == true, "миграция v3: владельцу машины выданы права")
-assert(d.Version == 3 and d.Cash == 777 and d.Cars.sport and d.Partner == "5" and d.Stats.TasksDone == 10 and d.Stats.QuestsDone == 0)
+assert(type(d.Home) == "table" and d.Home.Items == nil and type(d.Home.Unlocked) == "table", "v4: раздел дома создан, мебель — стандартная")
+assert(d.Version == 4 and d.Cash == 777 and d.Cars.sport and d.Partner == "5" and d.Stats.TasksDone == 10 and d.Stats.QuestsDone == 0)
 DS.Save(p)
 assert(saved and saved.Cash == 777, "saved")
 -- сбой загрузки: сохранение не должно перезаписать данные

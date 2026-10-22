@@ -39,9 +39,10 @@ local ctx = {
 	Progression = require(Services.ProgressionService),
 	Activities = require(Services.ActivityService),
 	Football = require(Services.FootballService),
+	Home = require(Services.HomeService),
 }
 
-for _, name in { "Needs", "Economy", "Jobs", "Crime", "Tools", "Housing", "Social", "Vehicles", "Monetization", "Quests", "Npcs", "Weather", "Clothing", "Progression", "Activities", "Football", "Players" } do
+for _, name in { "Needs", "Economy", "Jobs", "Crime", "Tools", "Housing", "Social", "Vehicles", "Monetization", "Quests", "Npcs", "Weather", "Clothing", "Progression", "Activities", "Football", "Home", "Players" } do
 	ctx[name].Init(ctx)
 end
 ctx.Players.Start()

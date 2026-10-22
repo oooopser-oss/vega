@@ -526,8 +526,9 @@ local function buildHouse(id, a)
 	-- Участок: газон, забор с калиткой, дорожка до улицы.
 	part({ Parent = m, Name = "Lawn", Size = Vector3.new(46, 0.3, 46), CFrame = at(0, 0.05, 0), Color = Color3.fromRGB(110, 175, 85), Material = Enum.Material.Grass })
 	local fenceH = 3.5
+	local styled = { Wall = {}, Floor = {}, Roof = {}, Fence = {} } -- детали для отделки дома
 	local function fence(lx, lz, sx, sz)
-		part({ Parent = m, Name = "Fence", Size = Vector3.new(sx, fenceH, sz), CFrame = at(lx, fenceH / 2, lz), Color = trim, Material = Enum.Material.WoodPlanks })
+		table.insert(styled.Fence, part({ Parent = m, Name = "Fence", Size = Vector3.new(sx, fenceH, sz), CFrame = at(lx, fenceH / 2, lz), Color = trim, Material = Enum.Material.WoodPlanks }))
 	end
 	fence(0, -23, 46, 0.5)
 	fence(-23, 0, 0.5, 46)
@@ -535,7 +536,7 @@ local function buildHouse(id, a)
 	fence(-13.5, 23, 19, 0.5)
 	fence(13.5, 23, 19, 0.5)
 	for _, lx in { -4, 4 } do
-		part({ Parent = m, Name = "GatePost", Size = Vector3.new(1, 5, 1), CFrame = at(lx, 2.5, 23), Color = trim, Material = Enum.Material.Wood })
+		table.insert(styled.Fence, part({ Parent = m, Name = "GatePost", Size = Vector3.new(1, 5, 1), CFrame = at(lx, 2.5, 23), Color = trim, Material = Enum.Material.Wood }))
 	end
 	part({ Parent = m, Name = "Path", Size = Vector3.new(4, 0.35, 28), CFrame = at(0, 0.18, 19), Color = Color3.fromRGB(190, 180, 165), Material = Enum.Material.Cobblestone })
 
@@ -544,9 +545,9 @@ local function buildHouse(id, a)
 	local zc = -6 -- центр дома по глубине (участок спереди свободен под двор)
 	local zf, zb = zc + D / 2, zc - D / 2
 	part({ Parent = m, Name = "Foundation", Size = Vector3.new(W + 1, 1, D + 1), CFrame = at(0, 0.5, zc), Color = Color3.fromRGB(140, 135, 130), Material = Enum.Material.Concrete })
-	part({ Parent = m, Name = "Floor", Size = Vector3.new(W - 1, 0.2, D - 1), CFrame = at(0, 1.05, zc), Color = Color3.fromRGB(175, 135, 95), Material = Enum.Material.WoodPlanks })
+	table.insert(styled.Floor, part({ Parent = m, Name = "Floor", Size = Vector3.new(W - 1, 0.2, D - 1), CFrame = at(0, 1.05, zc), Color = Color3.fromRGB(175, 135, 95), Material = Enum.Material.WoodPlanks }))
 	local function wallPart(lx, ly, lz, sx, sy, sz)
-		part({ Parent = m, Name = "Wall", Size = Vector3.new(sx, sy, sz), CFrame = at(lx, ly, lz), Color = wall, Material = Enum.Material.Plaster })
+		table.insert(styled.Wall, part({ Parent = m, Name = "Wall", Size = Vector3.new(sx, sy, sz), CFrame = at(lx, ly, lz), Color = wall, Material = Enum.Material.Plaster }))
 	end
 	local top = 1 + H
 	wallPart(0, 1 + H / 2, zb + 0.5, W, H, 1) -- задняя
@@ -574,6 +575,11 @@ local function buildHouse(id, a)
 
 	-- Двускатная крыша и труба.
 	gableRoof(m, at(0, top + 0.4, zc), W + 2, D + 2, 7, roofColor)
+	for _, r in m:GetChildren() do
+		if r.Name == "Roof" then
+			table.insert(styled.Roof, r)
+		end
+	end
 	part({ Parent = m, Name = "Chimney", Size = Vector3.new(2.2, 6, 2.2), CFrame = at(8, top + 5, zc - 5), Color = Color3.fromRGB(150, 80, 60), Material = Enum.Material.Brick })
 
 	-- Крыльцо с навесом.
@@ -589,20 +595,11 @@ local function buildHouse(id, a)
 	l.Color = Color3.fromRGB(255, 220, 160)
 	l.Parent = lamp
 
-	-- Двор: клумбы, дерево, скамейка.
-	for _, lx in { -14, 14 } do
-		part({ Parent = m, Name = "Flowerbed", Size = Vector3.new(8, 0.8, 3), CFrame = at(lx, 0.5, 14), Color = Color3.fromRGB(95, 65, 45), Material = Enum.Material.Ground })
-		for i = -1, 1 do
-			local colors = { Color3.fromRGB(240, 80, 120), Color3.fromRGB(255, 220, 60), Color3.fromRGB(180, 90, 230) }
-			part({ Parent = m, Shape = Enum.PartType.Ball, Name = "Flower", Size = Vector3.new(1.4, 1.4, 1.4), CFrame = at(lx + i * 2.5, 1.4, 14), Color = colors[i + 2], Material = Enum.Material.SmoothPlastic, CanCollide = false })
-		end
-	end
+	-- Двор: дерево. Клумбы, скамейку и мебель расставляет HomeService (Config.Home.Default).
 	tree(at(-17, 0, -19).Position)
-	bench(at(15, 0, 18) * CFrame.Angles(0, math.rad(180), 0), 1)
 
 	-- Интерьер.
 	local door = part({ Parent = m, Name = "Door", Size = Vector3.new(5, 8, 0.5), CFrame = at(0, 5, zf - 0.5), Color = Color3.fromRGB(110, 70, 40), Material = Enum.Material.Wood })
-	part({ Parent = m, Name = "Rug", Size = Vector3.new(10, 0.1, 7), CFrame = at(4, 1.2, zc + 1), Color = Color3.fromRGB(170, 60, 70), Material = Enum.Material.Fabric, CanCollide = false })
 	local bed = interactable(m, "Bed", at(-9, 2.2, zb + 5.5), Vector3.new(6, 2, 9), Color3.fromRGB(240, 240, 255), "Кровать", Enum.Material.Fabric)
 	part({ Parent = m, Name = "Pillow", Size = Vector3.new(5, 0.8, 2), CFrame = at(-9, 3.5, zb + 2), Color = Color3.new(1, 1, 1), Material = Enum.Material.Fabric })
 	part({ Parent = m, Name = "Blanket", Size = Vector3.new(6.2, 0.3, 5), CFrame = at(-9, 3.3, zb + 7.5), Color = Color3.fromRGB(80, 120, 190), Material = Enum.Material.Fabric })
@@ -610,11 +607,8 @@ local function buildHouse(id, a)
 	shower.Transparency = 0.4
 	shower.CanCollide = false
 	local tv = interactable(m, "TV", at(9, 5, zf - 1.3), Vector3.new(7, 4, 0.5), Color3.fromRGB(20, 20, 20), "Телевизор")
-	part({ Parent = m, Name = "Sofa", Size = Vector3.new(8, 2, 3), CFrame = at(9, 2.1, zc + 0.5), Color = Color3.fromRGB(90, 60, 120), Material = Enum.Material.Fabric })
-	part({ Parent = m, Name = "SofaBack", Size = Vector3.new(8, 2.5, 0.8), CFrame = at(9, 3.4, zc - 1.1), Color = Color3.fromRGB(90, 60, 120), Material = Enum.Material.Fabric })
 	local fridge = interactable(m, "Fridge", at(-12.5, 5, zf - 3), Vector3.new(3.5, 8, 3.5), Color3.fromRGB(235, 235, 240), "Холодильник", Enum.Material.Metal)
 	part({ Parent = m, Name = "Kitchen", Size = Vector3.new(3.5, 3.5, 7), CFrame = at(-12.5, 2.8, zf - 9), Color = Color3.fromRGB(210, 200, 185), Material = Enum.Material.Wood })
-	part({ Parent = m, Shape = Enum.PartType.Cylinder, Name = "Table", Size = Vector3.new(3.4, 5, 5), CFrame = at(-4, 2.75, zf - 5) * CFrame.Angles(0, 0, math.rad(90)), Color = Color3.fromRGB(190, 150, 110), Material = Enum.Material.Wood })
 	local light = part({ Parent = m, Name = "Lamp", Size = Vector3.new(3, 0.4, 3), CFrame = at(0, top - 0.3, zc), Color = Color3.fromRGB(255, 250, 220), Material = Enum.Material.Neon, CanCollide = false })
 	local pl = Instance.new("PointLight")
 	pl.Range = 24
@@ -640,7 +634,13 @@ local function buildHouse(id, a)
 		Doorstep = delivery,
 		Spawn = at(0, 4, zc + 2),
 		Center = at(0, 0, 0).Position,
+		Base = base,
+		Styled = styled,
 	}
+	local furniture = Instance.new("Model")
+	furniture.Name = "Furniture"
+	furniture.Parent = m
+	house.Furniture = furniture
 	table.insert(World.Houses, house)
 	return house
 end

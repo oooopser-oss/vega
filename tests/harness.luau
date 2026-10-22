@@ -84,6 +84,7 @@ local special = {
 	GetTagged = function() return {} end,
 	GetServerTimeNow = function() return os.clock() end,
 	Raycast = function() return nil end,
+	ViewportPointToRay = function() return { Origin = roblox.Vector3.new(10, 60, 20), Direction = roblox.Vector3.new(0.1, -1, 0.05).Unit } end,
 	Create = function() return { Play = function() end } end,
 	FireAllClients = function() end,
 	FireClient = function() end,

@@ -14,7 +14,7 @@ local DataService = {}
 -- потеряют прогресс. Изменения формата данных делаются через DATA_VERSION
 -- и миграции ниже (см. UPDATES.md).
 local STORE_NAME = "LifeCity_v1"
-local DATA_VERSION = 3
+local DATA_VERSION = 4
 
 -- Миграции: функция для каждой новой версии формата данных.
 -- Старые сохранения последовательно доводятся до DATA_VERSION.
@@ -28,6 +28,13 @@ local MIGRATIONS = {
 		-- v3: навыки, учёба, права. Кто уже купил машину — получает права.
 		if type(data.Cars) == "table" and next(data.Cars) ~= nil then
 			data.License = true
+		end
+	end,
+	[4] = function(data)
+		-- v4: обустройство дома. Владельцы получают стандартную мебель
+		-- (HomeService.HomeOf), которую теперь можно переставить или продать.
+		if type(data.Home) ~= "table" then
+			data.Home = nil
 		end
 	end,
 }
@@ -52,6 +59,7 @@ local function defaultData()
 		License = false, -- водительские права
 		Outfit = nil, -- надетый комплект { Top, Bottom, Hat, Accessory }; nil — свой аватар
 		HasHouse = false,
+		Home = { Style = {}, Unlocked = {}, Open = false }, -- отделка, премиум-мебель; расстановку (Items) создаёт HomeService
 		Role = "Citizen",
 		Relations = {}, -- [tostring(userId)] = { Points, Status, Name }
 		Partner = nil, -- tostring(userId)
@@ -67,7 +75,7 @@ local function reconcile(data, template)
 	for k, v in template do
 		if data[k] == nil then
 			data[k] = v
-		elseif type(v) == "table" and type(data[k]) == "table" and k ~= "Relations" and k ~= "Inventory" and k ~= "Cars" then
+		elseif type(v) == "table" and type(data[k]) == "table" and k ~= "Relations" and k ~= "Inventory" and k ~= "Cars" and k ~= "Items" and k ~= "Unlocked" and k ~= "Style" then
 			reconcile(data[k], v)
 		end
 	end

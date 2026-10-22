@@ -20,6 +20,7 @@ local PlayersStub = { LocalPlayer = player, GetPlayers = function() return { pla
 local function sigs() return setmetatable({}, { __index = function(t, k) local s = H.signal() rawset(t, k, s) return s end }) end
 local RunService = sigs()
 local UIS = sigs()
+rawset(UIS, "GetMouseLocation", function() return roblox.Vector2.new(400, 300) end)
 local services = {
 	Players = PlayersStub, RunService = RunService, UserInputService = UIS,
 	TextChatService = { DisplayBubble = function() end },
@@ -106,6 +107,28 @@ local steps = {
 	function() fire("Waypoint", { Name = "Дом", Position = roblox.Vector3.new(10, 0, 10) }); fire("Alert", { Text = "Тревога", Position = roblox.Vector3.new(0, 0, 50) }) end,
 	function() fire("DoorBell", { From = "Anna", House = 3 }); fire("Bubble", { Text = "hi" }); fire("CloseMenus", {}) end,
 	function() for _, s in RunService.RenderStepped.handlers do s(0.2) end for _, s in RunService.Heartbeat.handlers do s(0.2) end end,
+	function()
+		-- Обустройство дома: вкладка «Дом», режим расстановки, каталог, призрак мебели.
+		fire("Home", { HouseId = 3, Base = { X = 10, Z = 20, Yaw = 90 }, Items = { { Id = "sofa", X = 9, Z = -5.5, R = 0 } }, Style = { Wall = 2 }, Unlocked = { piano = true }, Comfort = 6, Open = false, IsOwner = true })
+		fire("OpenPhone", { Tab = "Дом" })
+		assert(clickText("Обустроить дом"), "нет кнопки обустройства")
+		assert(gui:FindFirstChild("HomeEditor"), "режим обустройства не открылся")
+		assert(clickText("Хобби"), "нет категории")
+		local card
+		for _, d in gui:GetDescendants() do
+			if d:IsA("TextLabel") and d.Text == "Книжный шкаф" then
+				card = d.Parent
+			end
+		end
+		assert(card, "нет карточки шкафа")
+		H.sigFor(card, "MouseButton1Click"):Fire()
+		for _, h in RunService.RenderStepped.handlers do h(0.1) end
+		assert(clickText("Повернуть"), "нет кнопки поворота")
+		assert(clickText("Отмена"), "нет отмены")
+		fire("Home", { HouseId = 3, Base = { X = 10, Z = 20, Yaw = 90 }, Items = {}, Style = {}, Unlocked = {}, Comfort = 0, Open = true, IsOwner = true })
+		assert(clickText("Готово"), "нет выхода")
+		assert(not gui:FindFirstChild("HomeEditor"), "режим не закрылся")
+	end,
 	function() fire("OpenPhone", { Tab = "Дом" }); clickText("Продать") ; fire("OpenBank", {}); clickText("Внести") end,
 	function()
 		-- Городская жизнь: машины и прохожие появляются и двигаются.
